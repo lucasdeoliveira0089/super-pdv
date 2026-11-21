@@ -1,0 +1,16 @@
+pnpm-lock.yaml
+node_modules/
+dist/
+out/
+.next/
+.turbo/
+coverage/
+release/
+playwright-report/
+test-results/
+# Gerados/gerenciados por ferramentas
+.agents/
+.claude/
+openspec/
+# Gerados pelo drizzle-kit
+packages/db/migrations/

@@ -1,0 +1,41 @@
+# Dependências
+node_modules/
+
+# Builds
+dist/
+out/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# Electron (electron-builder)
+apps/pdv/release/
+
+# Turborepo
+.turbo/
+
+# Testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Variáveis de ambiente (somente os exemplos são versionados)
+.env
+.env.*
+!.env.example
+
+# Logs e sistema
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Claude Code (configurações locais)
+.claude/settings.local.json

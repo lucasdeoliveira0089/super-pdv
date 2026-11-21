@@ -1,0 +1,23 @@
+name: super-pdv
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-superpdv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-superpdv}
+      POSTGRES_DB: ${POSTGRES_DB:-superpdv}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Postgres 18+ guarda os dados em subdiretório por versão dentro de /var/lib/postgresql.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

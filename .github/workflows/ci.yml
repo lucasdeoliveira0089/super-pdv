@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Remote Cache do Turborepo: usado automaticamente quando os segredos existem.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verify:
+    name: Lint, tipos, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # histórico completo para o --affected comparar com a base
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Habilitar pnpm (corepack)
+        run: corepack enable pnpm
+
+      - name: Caminho do store do pnpm
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache do store do pnpm
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Cache local do Turborepo
+        uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Definir o escopo afetado
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # PR: o Turborepo compara com a branch base (GITHUB_BASE_REF) automaticamente.
+          # Push: compara com o commit anterior ao push. Primeiro push: executa tudo.
+          if [ "$EVENT" = "push" ]; then
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              echo "args=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "TURBO_SCM_BASE=$BEFORE" >> "$GITHUB_ENV"
+          fi
+          echo "args=--affected" >> "$GITHUB_OUTPUT"
+
+      - name: Lint, tipos, testes e build
+        run: pnpm turbo run lint typecheck test build ${{ steps.scope.outputs.args }}
+
+      - name: Instalar navegador do Playwright
+        run: pnpm --filter @super-pdv/admin exec playwright install --with-deps chromium
+
+      - name: Testes E2E (exceto PDV, executado no Windows)
+        run: pnpm turbo run test:e2e ${{ steps.scope.outputs.args }} --filter='!@super-pdv/pdv'
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-admin
+          path: apps/admin/playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+  pdv-windows:
+    name: PDV (Windows) — E2E e instalador
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Habilitar pnpm (corepack)
+        run: corepack enable pnpm
+
+      - name: Caminho do store do pnpm
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache do store do pnpm
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Verificar se o PDV foi afetado
+        id: affected
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # turbo-ignore sai com 0 quando NÃO há mudanças que afetem o pacote.
+          if pnpm dlx turbo-ignore @super-pdv/pdv --task=build --fallback="$BEFORE"; then
+            echo "pdv=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "pdv=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build do PDV e dependências
+        if: steps.affected.outputs.pdv == 'true'
+        run: pnpm turbo run build --filter='@super-pdv/pdv...'
+
+      - name: Testes unitários do PDV (runtime do Electron)
+        if: steps.affected.outputs.pdv == 'true'
+        run: pnpm --filter @super-pdv/pdv test
+
+      - name: Testes E2E do PDV
+        if: steps.affected.outputs.pdv == 'true'
+        run: pnpm --filter @super-pdv/pdv test:e2e
+
+      - name: Traces do Playwright (PDV)
+        if: failure() && steps.affected.outputs.pdv == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces-pdv
+          path: apps/pdv/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Gerar instalador Windows
+        if: steps.affected.outputs.pdv == 'true'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            echo "::warning title=Instalador sem assinatura::CSC_LINK não configurado; o instalador do PDV foi gerado sem assinatura de código."
+          fi
+          pnpm --filter @super-pdv/pdv exec electron-builder --win --publish never
+
+      - name: Publicar instalador como artefato
+        if: steps.affected.outputs.pdv == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: super-pdv-instalador-windows
+          path: apps/pdv/release/*-setup.exe
+          if-no-files-found: error
+          retention-days: 30

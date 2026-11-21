@@ -1,0 +1,4 @@
+{
+  "extends": "@super-pdv/config/tsconfig/library.json",
+  "include": ["src", "*.config.ts"]
+}

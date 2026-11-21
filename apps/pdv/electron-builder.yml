@@ -1,0 +1,43 @@
+appId: br.com.superpdv.pdv
+productName: Super PDV
+copyright: Copyright © Super PDV
+
+# Nome sem escopo npm para a pasta de instalação (%LOCALAPPDATA%\Programs\super-pdv).
+extraMetadata:
+  name: super-pdv
+
+directories:
+  buildResources: build
+  output: release
+
+# Apenas o build (out/) e o package.json; dependências de produção são coletadas
+# automaticamente (só better-sqlite3: o resto é empacotado no bundle pelo electron-vite).
+files:
+  - out/**
+  - package.json
+  # Fontes C e binários de outras plataformas do better-sqlite3 não são usados.
+  - "!**/node_modules/better-sqlite3/{deps,src}/**"
+  - "!**/node_modules/better-sqlite3/prebuilds/{darwin,linux,linuxmusl}-*.node"
+
+# Binários nativos precisam ficar fora do asar para serem carregados.
+asarUnpack:
+  - "**/*.node"
+
+# better-sqlite3 usa N-API com binários pré-compilados: não há recompilação por ABI.
+npmRebuild: false
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  executableName: super-pdv
+  icon: build/icon.ico
+
+nsis:
+  artifactName: super-pdv-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+
+# Publicação de atualizações automáticas fica para uma mudança futura.
+publish: null

@@ -1,0 +1,7 @@
+@import "@fontsource-variable/geist";
+@import "@super-pdv/ui/globals.css";
+
+/* Mesma família tipográfica do admin, empacotada localmente (o PDV funciona offline). */
+html {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+}

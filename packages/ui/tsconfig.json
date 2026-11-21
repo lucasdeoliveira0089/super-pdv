@@ -1,0 +1,10 @@
+{
+  "extends": "@super-pdv/config/tsconfig/react-library.json",
+  "compilerOptions": {
+    "paths": {
+      "@super-pdv/ui/*": ["./src/*"]
+    },
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
+  },
+  "include": ["src", "*.config.ts", "*.setup.ts"]
+}
