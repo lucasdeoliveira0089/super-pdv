@@ -10,8 +10,8 @@ const fontSans = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "Super PDV — Administração",
-  description: "Painel de gestão do Super PDV",
+  title: "Super PDV — Admin",
+  description: "Backoffice da equipe Super PDV",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

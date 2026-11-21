@@ -1,10 +1,12 @@
 import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
+import { Publico } from "../auth/decoradores";
 import { HealthCheckService, type HealthCheckResult } from "@nestjs/terminus";
 import { healthResponseSchema, type HealthResponse } from "@super-pdv/shared";
 import { DatabaseHealthIndicator } from "./database.health";
 
 /** Endpoints públicos de saúde (sem autenticação). */
 @Controller("health")
+@Publico()
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,

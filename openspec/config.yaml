@@ -7,16 +7,21 @@ context: |
 
   ## Produto
   Super PDV: software de gestão comercial para o varejo brasileiro, composto por
-  ponto de venda (PDV) desktop, painel administrativo web e API central.
+  ponto de venda (PDV) desktop, gestor web (cliente), admin web (equipe Super PDV)
+  e API central.
 
   ## Stack
   - Monorepo: Turborepo + pnpm workspaces. Linguagem única: TypeScript (strict).
   - apps/pdv: Electron + React (Vite). Camada nativa (main process) em Node/TypeScript,
     responsável por integração com hardware (impressora ESC/POS, gaveta, balança,
     TEF, SAT/MFE via DLL), banco local e sincronização com a API.
-  - apps/admin: Next.js (App Router) — painel de gestão do negócio.
-  - apps/api: NestJS — API central consumida pelo PDV e pelo admin.
-  - packages/ui: componentes shadcn/ui + Tailwind CSS, compartilhados entre pdv e admin.
+  - apps/admin: Next.js (App Router) — backoffice da equipe Super PDV (cadastra
+    clientes e as empresas/CNPJs que usam o sistema).
+  - apps/gestor: Next.js (App Router) — painel do cliente para administrar as
+    suas empresas, usuários e PDVs.
+  - apps/api: NestJS — API central consumida pelo PDV, gestor e admin.
+  - packages/ui: componentes shadcn/ui + Tailwind CSS, compartilhados entre pdv,
+    gestor e admin.
   - packages/shared: tipos, schemas (zod) e regras de domínio compartilhadas.
   - packages/db: schemas Drizzle e migrations (nuvem e local do caixa).
   - packages/config: tsconfig, ESLint e demais configurações compartilhadas.
@@ -42,12 +47,15 @@ context: |
   - Numeração fiscal (NFC-e) com série própria por caixa.
 
   ## Multi-empresa e autenticação
-  - Hierarquia: Tenant -> Empresa (CNPJ) -> Loja -> Caixa.
+  - Hierarquia: Cliente (tenant, usa o gestor) -> Empresa (CNPJ; cada
+    estabelecimento tem o seu) -> PDV (caixa). Não há nível "Loja".
+  - Empresas (CNPJs) são cadastradas apenas pela equipe Super PDV no admin.
   - Isolamento: coluna tenant_id em todas as tabelas de negócio + Row Level Security
     do PostgreSQL.
   - Autenticação implementada na própria API NestJS (sem provedor externo):
     JWT de acesso + refresh token, senhas com argon2.
-  - Autorização: papéis por loja com permissões granulares (ex.: venda.cancelar).
+  - Autorização: papéis por empresa com permissões granulares (ex.: venda.cancelar).
+  - Equipe Super PDV: usuários próprios, separados dos usuários dos clientes.
   - PDV: ativação do caixa por token (registro do dispositivo), login offline do
     operador por PIN/senha validados localmente, liberação por supervisor para
     cancelamento, desconto e sangria.
@@ -55,7 +63,7 @@ context: |
   ## Testes e CI
   - Vitest em todo o monorepo (NestJS via SWC).
   - Integração da API com Testcontainers (PostgreSQL real, sem mock de banco).
-  - E2E com Playwright (admin e PDV Electron).
+  - E2E com Playwright (admin, gestor e PDV Electron).
   - Hardware abstraído por interfaces com implementações fake para testes.
   - Repositório no GitHub; CI em GitHub Actions com cache do Turborepo
     (lint, typecheck, testes e build apenas do que mudou).
@@ -66,7 +74,7 @@ context: |
   - Sincronização em tempo real do saldo de estoque entre caixas.
 
   ## A definir (não assumir sem decisão explícita)
-  - Hospedagem da API, do admin e do banco; hospedagem das atualizações do PDV.
+  - Hospedagem da API, do admin, do gestor e do banco; hospedagem das atualizações do PDV.
 
   ## Diretrizes
   - O PDV MUST ser operável inteiramente pelo teclado (atalhos, foco, Enter/Esc).

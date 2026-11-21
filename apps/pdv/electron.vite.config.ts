@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
@@ -9,5 +10,14 @@ export default defineConfig({
   preload: {},
   renderer: {
     plugins: [react(), tailwindcss()],
+    resolve: {
+      // Componentes de packages/ui importam uns aos outros pelo nome do pacote.
+      alias: [
+        {
+          find: /^@super-pdv\/ui\/(components|hooks|lib)\//,
+          replacement: `${fileURLToPath(new URL("../../packages/ui/src", import.meta.url))}/$1/`,
+        },
+      ],
+    },
   },
 });

@@ -1,0 +1,36 @@
+{
+  "name": "@super-pdv/web-session",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./proxy": "./src/proxy.ts",
+    "./telas": "./src/telas.tsx"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@super-pdv/shared": "workspace:*",
+    "@super-pdv/ui": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@super-pdv/config": "workspace:*",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^10.15.0",
+    "next": "^16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  },
+  "peerDependencies": {
+    "next": "^16"
+  }
+}

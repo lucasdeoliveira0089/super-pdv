@@ -3,6 +3,8 @@ import { Test } from "@nestjs/testing";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { healthResponseSchema } from "@super-pdv/shared";
 import request from "supertest";
+import { configurarApp } from "../src/app.setup";
+import { aplicarAmbienteDeTeste } from "./ambiente";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
@@ -20,12 +22,12 @@ describe("Endpoints de saúde (integração)", () => {
       .withDatabase("superpdv_test")
       .start();
 
-    process.env.DATABASE_URL = container.getConnectionUri();
+    aplicarAmbienteDeTeste(container.getConnectionUri());
 
     // Importado depois de definir o ambiente: o ConfigModule valida na carga do módulo.
     const { AppModule } = await import("../src/app.module.js");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication({ logger: false });
+    app = configurarApp(moduleRef.createNestApplication({ logger: false }));
     await app.init();
   });
 
