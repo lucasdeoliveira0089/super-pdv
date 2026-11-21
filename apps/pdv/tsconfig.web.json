@@ -1,0 +1,16 @@
+{
+  "extends": "@super-pdv/config/tsconfig/vite-react.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "node_modules/.tsc/web",
+    // packages/ui é consumido como código-fonte e entra na checagem do renderer.
+    "rootDir": "../..",
+    "paths": {
+      "@super-pdv/ui/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": ["src/renderer/src/**/*", "src/shared/**/*", "../../packages/ui/src/**/*"],
+  "exclude": ["../../packages/ui/src/**/*.test.tsx"]
+}

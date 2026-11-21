@@ -1,0 +1,29 @@
+{
+  "name": "super-pdv",
+  "private": true,
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @super-pdv/db db:generate",
+    "db:migrate": "pnpm --filter @super-pdv/db db:migrate"
+  },
+  "devDependencies": {
+    "@super-pdv/config": "workspace:*",
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "^2.11.13",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,0 +1,19 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Falha a instalação quando a versão de Node não atende a `engines.node`.
+engineStrict: true
+
+# Pacotes autorizados a executar scripts de instalação (módulos nativos e binários).
+allowBuilds:
+  "@swc/core": true
+  better-sqlite3: true
+  electron: true
+  esbuild: true
+  # Dependências transitivas do Testcontainers: bindings nativos opcionais, não necessários.
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
+  # Instaladores Squirrel (o PDV usa NSIS).
+  electron-winstaller: false
