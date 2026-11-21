@@ -83,7 +83,7 @@
 
 ## 14. CI e verificação integrada
 
-- [ ] 14.1 Atualizar o workflow (Postgres + Mailpit via `docker compose`, migrations e `seed:dev` antes dos E2E de admin e gestor; filtros com `@super-pdv/gestor`); verificar com `actionlint` e com o PR desta mudança verde
+- [x] 14.1 Atualizar o workflow (Postgres + Mailpit via `docker compose`, migrations e `seed:dev` antes dos E2E de admin e gestor; filtros com `@super-pdv/gestor`); verificar com `actionlint` e com o PR desta mudança verde
 - [x] 14.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` na raiz e verificar sucesso
 - [x] 14.3 Rodar `openspec validate multi-tenant-e-autenticacao --strict` e verificar ausência de erros
 
