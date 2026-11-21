@@ -52,7 +52,7 @@
 
 ## 9. CI (GitHub Actions)
 
-- [ ] 9.1 Criar `.github/workflows/ci.yml` (PR e push em `main`, Ubuntu): pnpm via corepack com cache, `turbo run lint typecheck test build --affected`, E2E do admin, cache de `.turbo/` e Remote Cache opcional via segredos; verificar com `actionlint` e, após publicar no GitHub, com um PR verde
+- [x] 9.1 Criar `.github/workflows/ci.yml` (PR e push em `main`, Ubuntu): pnpm via corepack com cache, `turbo run lint typecheck test build --affected`, E2E do admin, cache de `.turbo/` e Remote Cache opcional via segredos; verificar com `actionlint` e, após publicar no GitHub, com um PR verde
 - [ ] 9.2 Adicionar job `pdv-windows` (push em `main` quando o PDV for afetado): build, E2E do PDV com trace em falha, `electron-builder --win`, assinatura condicional via `CSC_LINK`/`CSC_KEY_PASSWORD` com `::warning::` quando ausente e upload do instalador; verificar com `actionlint` e com uma execução em `main` gerando o artefato
 - [x] 9.3 Documentar no README os workflows, segredos opcionais (`TURBO_TOKEN`, `TURBO_TEAM`, `CSC_LINK`, `CSC_KEY_PASSWORD`); verificar que os nomes coincidem com os usados nos workflows
 
