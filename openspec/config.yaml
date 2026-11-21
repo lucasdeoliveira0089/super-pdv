@@ -1,0 +1,97 @@
+schema: spec-driven
+
+context: |
+  Language: pt-BR
+  All artifacts must be written in pt-BR.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  ## Produto
+  Super PDV: software de gestão comercial para o varejo brasileiro, composto por
+  ponto de venda (PDV) desktop, painel administrativo web e API central.
+
+  ## Stack
+  - Monorepo: Turborepo + pnpm workspaces. Linguagem única: TypeScript (strict).
+  - apps/pdv: Electron + React (Vite). Camada nativa (main process) em Node/TypeScript,
+    responsável por integração com hardware (impressora ESC/POS, gaveta, balança,
+    TEF, SAT/MFE via DLL), banco local e sincronização com a API.
+  - apps/admin: Next.js (App Router) — painel de gestão do negócio.
+  - apps/api: NestJS — API central consumida pelo PDV e pelo admin.
+  - packages/ui: componentes shadcn/ui + Tailwind CSS, compartilhados entre pdv e admin.
+  - packages/shared: tipos, schemas (zod) e regras de domínio compartilhadas.
+  - packages/db: schemas Drizzle e migrations (nuvem e local do caixa).
+  - packages/config: tsconfig, ESLint e demais configurações compartilhadas.
+  - Ferramentas de IA: MCP do shadcn configurado para o agente (.mcp.json).
+
+  ## Dados
+  - ORM: Drizzle (drizzle-kit para migrations).
+  - Nuvem: PostgreSQL.
+  - Caixa: SQLite local (better-sqlite3), um banco por caixa. O banco local contém
+    apenas o necessário para operar (catálogo, preços, operadores, vendas do caixa,
+    fila de envio), não é réplica completa da nuvem.
+  - IDs: UUIDv7 gerados na origem (o caixa gera IDs sem consultar a nuvem).
+
+  ## Offline e sincronização
+  - O caixa MUST continuar vendendo sem internet.
+  - Sincronização própria (sem ferramenta de terceiros):
+    - nuvem -> caixa: catálogo, preços, promoções, clientes, operadores, config fiscal.
+      Puxado incrementalmente por cursor/versão. A nuvem é a fonte da verdade.
+    - caixa -> nuvem: vendas, pagamentos, abertura/fechamento, sangrias, NFC-e.
+      Registros imutáveis, enviados via tabela outbox; a API MUST ser idempotente.
+  - Estoque: sincronizar movimentações (deltas), nunca saldo. O PDV não bloqueia
+    a venda por saldo de estoque; o saldo é calculado na nuvem.
+  - Numeração fiscal (NFC-e) com série própria por caixa.
+
+  ## Multi-empresa e autenticação
+  - Hierarquia: Tenant -> Empresa (CNPJ) -> Loja -> Caixa.
+  - Isolamento: coluna tenant_id em todas as tabelas de negócio + Row Level Security
+    do PostgreSQL.
+  - Autenticação implementada na própria API NestJS (sem provedor externo):
+    JWT de acesso + refresh token, senhas com argon2.
+  - Autorização: papéis por loja com permissões granulares (ex.: venda.cancelar).
+  - PDV: ativação do caixa por token (registro do dispositivo), login offline do
+    operador por PIN/senha validados localmente, liberação por supervisor para
+    cancelamento, desconto e sangria.
+
+  ## Testes e CI
+  - Vitest em todo o monorepo (NestJS via SWC).
+  - Integração da API com Testcontainers (PostgreSQL real, sem mock de banco).
+  - E2E com Playwright (admin e PDV Electron).
+  - Hardware abstraído por interfaces com implementações fake para testes.
+  - Repositório no GitHub; CI em GitHub Actions com cache do Turborepo
+    (lint, typecheck, testes e build apenas do que mudou).
+  - Build do PDV em runner Windows, com assinatura de código.
+
+  ## Fora de escopo por enquanto
+  - Servidor MCP do próprio produto (expor dados do negócio para IA).
+  - Sincronização em tempo real do saldo de estoque entre caixas.
+
+  ## A definir (não assumir sem decisão explícita)
+  - Hospedagem da API, do admin e do banco; hospedagem das atualizações do PDV.
+
+  ## Diretrizes
+  - O PDV MUST ser operável inteiramente pelo teclado (atalhos, foco, Enter/Esc).
+  - Código de domínio compartilhado vive em packages/, nunca duplicado entre apps.
+  - Componentes de UI reutilizáveis vivem em packages/ui; apps só compõem telas.
+  - Regras de negócio da API ficam na camada de serviços, não nos controllers.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
