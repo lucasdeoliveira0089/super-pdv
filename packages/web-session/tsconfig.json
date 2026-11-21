@@ -1,0 +1,12 @@
+{
+  "extends": "@super-pdv/config/tsconfig/react-library.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@super-pdv/ui/*": ["../ui/src/*"]
+    },
+    "rootDir": ".."
+  },
+  "include": ["src", "*.config.ts", "../ui/src/**/*"],
+  "exclude": ["../ui/src/**/*.test.tsx"]
+}

@@ -1,16 +1,28 @@
 # Super PDV
 
-Software de gestão comercial para o varejo: ponto de venda (PDV) desktop, painel administrativo web e API central, em um monorepo TypeScript.
+Software de gestão comercial para o varejo: ponto de venda (PDV) desktop, gestor web do cliente, admin web da equipe Super PDV e API central, em um monorepo TypeScript.
 
 | Caminho           | Pacote              | Descrição                                   |
 | ----------------- | ------------------- | ------------------------------------------- |
 | `apps/pdv`        | `@super-pdv/pdv`    | PDV desktop (Electron + React)              |
-| `apps/admin`      | `@super-pdv/admin`  | Painel administrativo (Next.js)             |
+| `apps/admin`      | `@super-pdv/admin`  | Admin da equipe Super PDV (Next.js)         |
+| `apps/gestor`     | `@super-pdv/gestor` | Gestor do cliente (Next.js)                 |
 | `apps/api`        | `@super-pdv/api`    | API central (NestJS)                        |
 | `packages/ui`     | `@super-pdv/ui`     | Componentes compartilhados (shadcn/ui)      |
 | `packages/shared` | `@super-pdv/shared` | Tipos e schemas (zod) compartilhados        |
 | `packages/db`     | `@super-pdv/db`     | Drizzle ORM, schema e migrations (Postgres) |
 | `packages/config` | `@super-pdv/config` | tsconfig, ESLint e Prettier compartilhados  |
+
+## Visão geral
+
+| App    | Porta | Quem usa                               | Para quê                                                    |
+| ------ | ----- | -------------------------------------- | ----------------------------------------------------------- |
+| admin  | 3001  | Equipe Super PDV                       | Cadastrar clientes e as empresas (CNPJs) que usam o sistema |
+| gestor | 3000  | Cliente (Dono, Administrador, Gerente) | Consultar as empresas e gerenciar usuários                  |
+| pdv    | —     | Operação de caixa                      | Vender (login no PDV chega na mudança `login-no-pdv`)       |
+| api    | 3333  | Todos os apps                          | Regras de negócio, autenticação e dados                     |
+
+Hierarquia: **Cliente** (tenant) → **Empresa** (CNPJ; cada estabelecimento tem o seu) → **PDV**. Os dados de cada cliente ficam isolados no PostgreSQL por Row Level Security.
 
 O desenvolvimento segue SDD com [OpenSpec](https://github.com/Fission-AI/OpenSpec): specs em `openspec/specs/`, mudanças em andamento em `openspec/changes/`.
 
@@ -44,16 +56,40 @@ Todos executados na raiz e orquestrados pelo Turborepo:
 
 Para executar um único app ou pacote, use o filtro do pnpm, por exemplo `pnpm --filter @super-pdv/api dev`.
 
-## Banco de dados local
+## Primeiros passos
 
-O PostgreSQL de desenvolvimento roda no Docker (`docker-compose.yml`), com os dados persistidos em um volume nomeado.
+```sh
+pnpm install
+pnpm db:up                                   # PostgreSQL + Mailpit
+pnpm db:migrate
+cp apps/api/.env.example apps/api/.env
+pnpm db:seed                                 # dados de demonstração
+pnpm dev                                     # API, admin, gestor e PDV
+```
+
+Credenciais criadas pelo `pnpm db:seed` (somente desenvolvimento):
+
+| Onde   | E-mail                  | Senha             | Papel                                    |
+| ------ | ----------------------- | ----------------- | ---------------------------------------- |
+| admin  | `equipe@superpdv.local` | `Equipe#Demo2026` | Equipe Super PDV                         |
+| gestor | `dono@demo.local`       | `Demo#Senha2026`  | Dono (todas as empresas)                 |
+| gestor | `admin@demo.local`      | `Demo#Senha2026`  | Administrador (todas as empresas)        |
+| gestor | `gerente@demo.local`    | `Demo#Senha2026`  | Gerente (Mercado Demo Centro)            |
+| gestor | `operador@demo.local`   | `Demo#Senha2026`  | Operador de caixa (sem acesso ao gestor) |
+
+O comando é idempotente e recusa rodar com `NODE_ENV=production`.
+
+## Banco de dados e e-mail locais
+
+O PostgreSQL de desenvolvimento roda no Docker (`docker-compose.yml`), com os dados persistidos em um volume nomeado. Junto dele roda o **Mailpit**, que captura todos os e-mails enviados pela API (ex.: recuperação de senha) sem entregá-los a ninguém: a caixa de entrada fica em http://localhost:8025.
 
 | Comando            | O que faz                                                              |
 | ------------------ | ---------------------------------------------------------------------- |
-| `pnpm db:up`       | Sobe o PostgreSQL e aguarda ficar saudável                             |
-| `pnpm db:down`     | Para o PostgreSQL (os dados continuam no volume)                       |
+| `pnpm db:up`       | Sobe o PostgreSQL e o Mailpit e aguarda ficarem saudáveis              |
+| `pnpm db:down`     | Para os serviços (os dados continuam no volume)                        |
 | `pnpm db:migrate`  | Aplica as migrations pendentes de `packages/db/migrations`             |
 | `pnpm db:generate` | Gera uma nova migration a partir do schema em `packages/db/src/schema` |
+| `pnpm db:seed`     | Cria os dados de demonstração                                          |
 
 As credenciais padrão estão em `.env.example` (`postgres://superpdv:superpdv@localhost:5432/superpdv`). Para alterá-las, copie o arquivo para `.env` na raiz e ajuste os valores; o Docker Compose e o `drizzle-kit` leem esse arquivo.
 
@@ -69,7 +105,28 @@ Para apagar todos os dados locais e começar do zero: `docker compose down -v`.
    pnpm --filter @super-pdv/api start   # executa o build
    ```
 
-A API escuta em `http://localhost:3333` (variável `PORT`) e recusa iniciar se alguma variável obrigatória estiver ausente ou inválida.
+A API escuta em `http://localhost:3333` e recusa iniciar se alguma variável obrigatória estiver ausente ou inválida:
+
+| Variável                 | Obrigatória | Descrição                                                                    |
+| ------------------------ | ----------- | ---------------------------------------------------------------------------- |
+| `DATABASE_URL`           | sim         | Conexão com o PostgreSQL                                                     |
+| `JWT_SECRET`             | sim         | Segredo dos tokens de acesso (≥ 32 caracteres; aleatório em produção)        |
+| `GESTOR_URL`             | sim         | URL pública do gestor (links de recuperação de senha dos clientes)           |
+| `ADMIN_URL`              | sim         | URL pública do admin (links de recuperação de senha da equipe)               |
+| `SMTP_URL`               | sim         | Servidor de e-mail, ex.: `smtp://localhost:1025` (Mailpit)                   |
+| `MAIL_FROM`              | sim         | Remetente dos e-mails                                                        |
+| `PORT`                   | não         | Porta HTTP (padrão 3333)                                                     |
+| `LIMITE_AUTH_POR_MINUTO` | não         | Requisições por minuto, por IP, nas rotas de login e recuperação (padrão 20) |
+
+Rotas de negócio ficam sob `/v1` e **exigem login por padrão**; as rotas da equipe ficam sob `/v1/admin`. Os detalhes das regras estão nas specs em `openspec/specs/`.
+
+### Equipe Super PDV: primeiro acesso
+
+Em um ambiente novo (sem o seed), crie o primeiro membro da equipe pelo comando interno. Ele recebe uma senha temporária, trocada no primeiro acesso ao admin; os demais membros são cadastrados pelo próprio admin.
+
+```sh
+pnpm --filter @super-pdv/api equipe:criar -- --nome "Fulana" --email fulana@superpdv.com.br
+```
 
 ### Endpoints de saúde
 
@@ -87,15 +144,16 @@ curl http://localhost:3333/health/ready
 
 Os testes da API (`pnpm --filter @super-pdv/api test`) incluem testes de integração que sobem um PostgreSQL temporário via Testcontainers: o Docker precisa estar em execução.
 
-## Painel administrativo (`apps/admin`)
+## Admin (`apps/admin`) e Gestor (`apps/gestor`)
 
 ```sh
-pnpm --filter @super-pdv/admin dev       # http://localhost:3000
-pnpm --filter @super-pdv/admin build
-pnpm --filter @super-pdv/admin test:e2e  # Playwright contra o build de produção
+pnpm --filter @super-pdv/admin dev       # http://localhost:3001
+pnpm --filter @super-pdv/gestor dev      # http://localhost:3000
+pnpm --filter @super-pdv/gestor build
+pnpm --filter @super-pdv/gestor test:e2e # Playwright contra o build de produção
 ```
 
-Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/admin exec playwright install chromium`.
+Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`.
 
 ## PDV (`apps/pdv`)
 
@@ -125,10 +183,10 @@ O `better-sqlite3` usa N-API e já traz binários pré-compilados: funciona no N
 
 Workflow em `.github/workflows/ci.yml`:
 
-| Job           | Quando                             | O que faz                                                                                                                                             |
-| ------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `verify`      | Todo pull request e push na `main` | Lint, checagem de tipos, testes (com PostgreSQL efêmero via Testcontainers) e build **apenas dos pacotes afetados** e seus dependentes; E2E do admin. |
-| `pdv-windows` | Push na `main` que afete o PDV     | Build, testes unitários e E2E do PDV em Windows; gera o instalador e o publica como artefato da execução (`super-pdv-instalador-windows`).            |
+| Job           | Quando                             | O que faz                                                                                                                                                 |
+| ------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify`      | Todo pull request e push na `main` | Lint, checagem de tipos, testes (com PostgreSQL efêmero via Testcontainers) e build **apenas dos pacotes afetados** e seus dependentes; E2E dos apps web. |
+| `pdv-windows` | Push na `main` que afete o PDV     | Build, testes unitários e E2E do PDV em Windows; gera o instalador e o publica como artefato da execução (`super-pdv-instalador-windows`).                |
 
 Segredos opcionais do repositório (Settings → Secrets and variables → Actions):
 

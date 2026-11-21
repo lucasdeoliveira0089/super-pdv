@@ -5,8 +5,12 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: /^@super-pdv\/ui\/(components|hooks)\/(.*)$/,
-        replacement: fileURLToPath(new URL("./src/$1/$2.tsx", import.meta.url)),
+        find: /^@super-pdv\/ui\/components\/(.*)$/,
+        replacement: fileURLToPath(new URL("./src/components/$1.tsx", import.meta.url)),
+      },
+      {
+        find: /^@super-pdv\/ui\/hooks\/(.*)$/,
+        replacement: fileURLToPath(new URL("./src/hooks/$1.ts", import.meta.url)),
       },
       {
         find: /^@super-pdv\/ui\/lib\/(.*)$/,

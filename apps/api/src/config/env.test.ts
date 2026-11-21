@@ -1,16 +1,20 @@
 import { ConfigModule } from "@nestjs/config";
 import { afterEach, describe, expect, it } from "vitest";
 import { configOptions } from "./config.options";
+import { ENV_TESTE } from "../../test/ambiente";
 import { validateEnv } from "./env";
 
 const VALID_URL = "postgres://user:pass@localhost:5432/db";
+const BASE = { ...ENV_TESTE, NODE_ENV: undefined, DATABASE_URL: VALID_URL };
 
 describe("validateEnv", () => {
   it("aceita um ambiente válido e aplica os padrões", () => {
-    expect(validateEnv({ DATABASE_URL: VALID_URL })).toEqual({
+    expect(validateEnv(BASE)).toEqual({
+      ...ENV_TESTE,
       NODE_ENV: "development",
       PORT: 3333,
       DATABASE_URL: VALID_URL,
+      LIMITE_AUTH_POR_MINUTO: 10000,
     });
   });
 
@@ -19,11 +23,24 @@ describe("validateEnv", () => {
   });
 
   it("rejeita URL que não é do PostgreSQL", () => {
-    expect(() => validateEnv({ DATABASE_URL: "mysql://localhost/db" })).toThrow(/DATABASE_URL/);
+    expect(() => validateEnv({ ...BASE, DATABASE_URL: "mysql://localhost/db" })).toThrow(
+      /DATABASE_URL/,
+    );
   });
 
   it("rejeita porta inválida", () => {
-    expect(() => validateEnv({ DATABASE_URL: VALID_URL, PORT: "abc" })).toThrow(/PORT/);
+    expect(() => validateEnv({ ...BASE, PORT: "abc" })).toThrow(/PORT/);
+  });
+
+  it.each([
+    ["JWT_SECRET", { JWT_SECRET: "curto" }, /JWT_SECRET: deve ter ao menos 32/],
+    ["JWT_SECRET", { JWT_SECRET: undefined }, /JWT_SECRET: obrigatória/],
+    ["GESTOR_URL", { GESTOR_URL: "ftp://x" }, /GESTOR_URL: deve ser uma URL http/],
+    ["ADMIN_URL", { ADMIN_URL: undefined }, /ADMIN_URL: obrigatória/],
+    ["SMTP_URL", { SMTP_URL: "http://x" }, /SMTP_URL: deve ser uma URL smtp/],
+    ["MAIL_FROM", { MAIL_FROM: undefined }, /MAIL_FROM: obrigatória/],
+  ])("valida %s", (_nome, alteracao, erro) => {
+    expect(() => validateEnv({ ...BASE, ...alteracao })).toThrow(erro);
   });
 });
 

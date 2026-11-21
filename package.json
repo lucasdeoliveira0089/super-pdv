@@ -11,13 +11,14 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:e2e": "turbo run test:e2e",
+    "test:e2e": "turbo run test:e2e --concurrency=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:up": "docker compose up -d --wait postgres",
+    "db:up": "docker compose up -d --wait postgres mailpit",
     "db:down": "docker compose down",
     "db:generate": "pnpm --filter @super-pdv/db db:generate",
-    "db:migrate": "pnpm --filter @super-pdv/db db:migrate"
+    "db:migrate": "pnpm --filter @super-pdv/db db:migrate",
+    "db:seed": "pnpm --filter @super-pdv/api seed:dev"
   },
   "devDependencies": {
     "@super-pdv/config": "workspace:*",

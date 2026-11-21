@@ -77,17 +77,27 @@ jobs:
         run: pnpm turbo run lint typecheck test build ${{ steps.scope.outputs.args }}
 
       - name: Instalar navegador do Playwright
-        run: pnpm --filter @super-pdv/admin exec playwright install --with-deps chromium
+        run: pnpm --filter @super-pdv/gestor exec playwright install --with-deps chromium
 
+      # Os E2E do admin e do gestor usam a API real: banco e e-mail locais do docker-compose.
+      # Migrations e dados de demonstração são aplicados pelo global-setup do Playwright.
+      - name: Subir PostgreSQL e Mailpit
+        run: |
+          cp apps/api/.env.example apps/api/.env
+          docker compose up -d --wait postgres mailpit
+
+      # Em série: admin e gestor compartilham a mesma API (porta 3333).
       - name: Testes E2E (exceto PDV, executado no Windows)
-        run: pnpm turbo run test:e2e ${{ steps.scope.outputs.args }} --filter='!@super-pdv/pdv'
+        run: pnpm turbo run test:e2e ${{ steps.scope.outputs.args }} --filter='!@super-pdv/pdv' --concurrency=1
 
-      - name: Relatório do Playwright
+      - name: Relatórios do Playwright
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-admin
-          path: apps/admin/playwright-report
+          name: playwright-reports
+          path: |
+            apps/admin/playwright-report
+            apps/gestor/playwright-report
           if-no-files-found: ignore
           retention-days: 7
 

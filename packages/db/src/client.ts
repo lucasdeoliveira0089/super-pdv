@@ -29,6 +29,6 @@ export function createDb(url: string, options: CreateDbOptions = {}): DbClient {
   const { onPoolError = () => undefined, ...poolOptions } = options;
   const pool = new Pool({ connectionString: url, ...poolOptions });
   pool.on("error", onPoolError);
-  const db = drizzle(pool, { schema });
+  const db = drizzle(pool, { schema, casing: "snake_case" });
   return { db, pool, close: () => pool.end() };
 }
