@@ -84,6 +84,17 @@ jobs:
       - name: Subir PostgreSQL e Mailpit
         run: |
           cp apps/api/.env.example apps/api/.env
+          # O download das imagens do Docker Hub às vezes cai (conexão reiniciada):
+          # até 3 tentativas antes de falhar.
+          for tentativa in 1 2 3; do
+            docker compose pull postgres mailpit && break
+            if [ "$tentativa" = 3 ]; then
+              echo "::error::Falha ao baixar as imagens do Docker Hub após 3 tentativas."
+              exit 1
+            fi
+            echo "::warning::Falha ao baixar as imagens (tentativa $tentativa de 3); tentando de novo em 15 s."
+            sleep 15
+          done
           docker compose up -d --wait postgres mailpit
 
       # Em série: admin e gestor compartilham a mesma API (porta 3333).
