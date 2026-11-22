@@ -16,6 +16,11 @@ export default tseslint.config(
       "**/playwright-report/**",
       "**/test-results/**",
       "**/next-env.d.ts",
+      // Arquivos temporários que o Vite/electron-vite criam e apagam ao carregar a
+      // configuração (ex.: electron.vite.config.ts.<n>.mjs). Com lint e build em
+      // paralelo, o ESLint os listaria e falharia ao abri-los (ENOENT).
+      "**/*.config.ts.*.mjs",
+      "**/*.config.*.timestamp-*.mjs",
     ],
   },
   js.configs.recommended,
