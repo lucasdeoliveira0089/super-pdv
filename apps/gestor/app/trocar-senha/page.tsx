@@ -8,6 +8,7 @@ export default async function TrocarSenhaPage() {
   const usuario = await usuarioLogado({ permitirSenhaTemporaria: true });
   return (
     <TelaAutenticacao
+      contexto="Gestor das suas empresas"
       titulo={usuario.senhaTemporaria ? "Defina a sua senha" : "Trocar senha"}
       descricao={
         usuario.senhaTemporaria

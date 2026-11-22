@@ -8,6 +8,7 @@ export default async function TrocarSenhaPage() {
   const membro = await membroLogado({ permitirSenhaTemporaria: true });
   return (
     <TelaAutenticacao
+      contexto="Admin da equipe Super PDV"
       titulo={membro.senhaTemporaria ? "Defina a sua senha" : "Trocar senha"}
       descricao={
         membro.senhaTemporaria

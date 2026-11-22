@@ -25,7 +25,15 @@ export async function entrar(page: Page, email: string, senha = SENHA_DEMO): Pro
 }
 
 export async function sair(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Sair" }).click();
+  // Páginas autenticadas: "Sair" fica no menu do usuário, no rodapé do menu lateral.
+  // Telas sem menu (ex.: "Acesso pelo PDV") têm o botão direto.
+  const botao = page.getByRole("button", { name: "Sair", exact: true });
+  if (await botao.isVisible()) {
+    await botao.click();
+  } else {
+    await page.getByRole("button", { name: /^Menu do usuário/ }).click();
+    await page.getByRole("menuitem", { name: "Sair" }).click();
+  }
   await expect(page).toHaveURL(/\/login/);
 }
 
@@ -69,3 +77,6 @@ export async function ultimoEmail(email: string): Promise<string> {
   }
   throw new Error(`Nenhum e-mail para ${email} no Mailpit`);
 }
+
+/** Menu lateral principal (evita confundir com os links da trilha de navegação). */
+export const menu = (page: Page) => page.getByRole("navigation", { name: "Menu principal" });
