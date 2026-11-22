@@ -1,0 +1,12 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      // Os endereços (MAIN_VITE_*) são gravados no build: mudar o .env ou o
+      // ambiente precisa gerar um build novo, e não reaproveitar o cache.
+      "inputs": ["$TURBO_DEFAULT$", ".env", "!**/*.test.*", "!**/*.spec.*", "!e2e/**", "!test/**"],
+      "env": ["MAIN_VITE_*"]
+    }
+  }
+}

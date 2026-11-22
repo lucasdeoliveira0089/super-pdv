@@ -43,6 +43,7 @@ Ao abrir: se houver sessão salva, renova; sucesso → `principal` (ou `escolher
 
 - **Unitários no runtime do Electron**: `SessionStore` (arquivo cifrado, sem persistência sem criptografia), `ApiClient` (renovação em 401, mapeamento de erros) e garantia de que nenhuma resposta IPC contém tokens.
 - **E2E** (Playwright `_electron`) contra um **servidor simulado da API** em Node, iniciado pelo teste, que implementa as rotas usadas e valida requisições e respostas com os schemas de `packages/shared`. O runner Windows do CI não roda containers Linux; a autenticação real já é testada na API.
+- **CI**: o job `pdv-windows` passa a rodar também em pull requests que afetam o PDV (build, testes e E2E), para que o login do PDV seja verificado antes do merge; o instalador continua sendo gerado só no push na branch principal, como exige `ci-pipeline`. A detecção de "afetado" usa `turbo ls --affected` (dependentes incluídos).
 
 ## Risks / Trade-offs
 

@@ -101,10 +101,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # Pull requests: testes e E2E do PDV no Windows quando ele é afetado.
+  # Branch principal: também gera o instalador.
   pdv-windows:
     name: PDV (Windows) — E2E e instalador
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
     timeout-minutes: 40
     defaults:
@@ -139,13 +141,23 @@ jobs:
       - name: Verificar se o PDV foi afetado
         id: affected
         env:
+          EVENT: ${{ github.event_name }}
           BEFORE: ${{ github.event.before }}
         run: |
-          # turbo-ignore sai com 0 quando NÃO há mudanças que afetem o pacote.
-          if pnpm dlx turbo-ignore @super-pdv/pdv --task=build --fallback="$BEFORE"; then
-            echo "pdv=false" >> "$GITHUB_OUTPUT"
-          else
+          # PR: o Turborepo compara com a branch base (GITHUB_BASE_REF) automaticamente.
+          # Push: compara com o commit anterior ao push. Primeiro push: considera afetado.
+          if [ "$EVENT" = "push" ]; then
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              echo "pdv=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            export TURBO_SCM_BASE="$BEFORE"
+          fi
+          # Pacotes alterados e os seus dependentes.
+          if pnpm turbo ls --affected --output=json | grep -q '"@super-pdv/pdv"'; then
             echo "pdv=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pdv=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build do PDV e dependências
@@ -170,7 +182,7 @@ jobs:
           retention-days: 7
 
       - name: Gerar instalador Windows
-        if: steps.affected.outputs.pdv == 'true'
+        if: steps.affected.outputs.pdv == 'true' && github.event_name == 'push'
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -181,7 +193,7 @@ jobs:
           pnpm --filter @super-pdv/pdv exec electron-builder --win --publish never
 
       - name: Publicar instalador como artefato
-        if: steps.affected.outputs.pdv == 'true'
+        if: steps.affected.outputs.pdv == 'true' && github.event_name == 'push'
         uses: actions/upload-artifact@v7
         with:
           name: super-pdv-instalador-windows

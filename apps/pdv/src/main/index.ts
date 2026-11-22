@@ -1,7 +1,11 @@
 import { join } from "node:path";
-import { app, BrowserWindow, ipcMain, shell } from "electron";
-import { IpcChannel, type LocalDbStatus } from "../shared/ipc";
+import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell } from "electron";
+import type { LocalDbStatus } from "../shared/ipc";
+import { type ConfigPdv, ConfigInvalidaError, lerConfig } from "./config";
+import { registrarIpc } from "./ipc";
 import { openLocalDb, type LocalDb } from "./local-db";
+import { ServicoSessao } from "./sessao";
+import { SessionStore } from "./session-store";
 
 // Permite isolar os dados em testes E2E (pasta temporária no lugar de %APPDATA%).
 if (process.env.SUPER_PDV_USER_DATA_DIR) {
@@ -9,6 +13,20 @@ if (process.env.SUPER_PDV_USER_DATA_DIR) {
 }
 
 let localDb: LocalDb | undefined;
+
+/**
+ * Endereços gravados no build. Fora do app empacotado (dev e E2E), variáveis de
+ * ambiente do processo podem substituí-los, por exemplo para a API simulada.
+ */
+function carregarConfig(): ConfigPdv {
+  const doProcesso = (nome: "MAIN_VITE_API_URL" | "MAIN_VITE_GESTOR_URL") =>
+    app.isPackaged ? undefined : process.env[nome];
+  return lerConfig({
+    MAIN_VITE_API_URL: doProcesso("MAIN_VITE_API_URL") ?? import.meta.env.MAIN_VITE_API_URL,
+    MAIN_VITE_GESTOR_URL:
+      doProcesso("MAIN_VITE_GESTOR_URL") ?? import.meta.env.MAIN_VITE_GESTOR_URL,
+  });
+}
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -49,13 +67,33 @@ function localDbStatus(): LocalDbStatus {
 void app.whenReady().then(() => {
   app.setAppUserModelId("br.com.superpdv.pdv");
 
+  let config: ConfigPdv;
+  try {
+    config = carregarConfig();
+  } catch (error) {
+    const detalhe = error instanceof ConfigInvalidaError ? error.problemas.join("\n") : error;
+    dialog.showErrorBox("Super PDV — configuração inválida", String(detalhe));
+    app.quit();
+    return;
+  }
+
   try {
     localDb = openLocalDb(app.getPath("userData"));
   } catch (error) {
     console.error("Falha ao abrir o banco local:", error);
   }
 
-  ipcMain.handle(IpcChannel.LocalDbStatus, () => localDbStatus());
+  const sessao = new ServicoSessao({
+    apiUrl: config.apiUrl,
+    // Criptografia do sistema operacional (DPAPI no Windows), disponível após o `ready`.
+    store: new SessionStore(app.getPath("userData"), safeStorage),
+  });
+
+  registrarIpc(ipcMain, {
+    sessao,
+    localDbStatus,
+    abrirRecuperacaoSenha: () => shell.openExternal(`${config.gestorUrl}/esqueci-senha`),
+  });
 
   createWindow();
 
