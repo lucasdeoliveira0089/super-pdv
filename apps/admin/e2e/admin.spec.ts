@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { DONO_DEMO, EQUIPE, entrar, entrarComoEquipe, gerarCnpj, sair, unico } from "./util";
+import { DONO_DEMO, EQUIPE, entrar, entrarComoEquipe, gerarCnpj, menu, sair, unico } from "./util";
 
 test.describe("autenticação no admin", () => {
   test("página interna sem login leva ao login e volta à página pedida", async ({ page }) => {
@@ -35,7 +35,8 @@ test.describe("equipe", () => {
   }) => {
     const email = `membro.${unico()}@superpdv.local`;
     await entrarComoEquipe(page);
-    await page.getByRole("link", { name: "Equipe" }).click();
+    await menu(page).getByRole("link", { name: "Equipe" }).click();
+    await expect(page.getByRole("heading", { name: "Novo membro" })).toBeVisible();
     await page.getByLabel("Nome").fill("Carla Teste");
     await page.getByLabel("E-mail").fill(email);
     await page.getByRole("button", { name: "Cadastrar membro" }).click();
@@ -107,9 +108,12 @@ test.describe("clientes e empresas", () => {
     await expect(page.getByText("Ativo", { exact: true })).toBeVisible();
 
     // Busca por CNPJ
-    await page.getByRole("link", { name: "Clientes" }).click();
+    await menu(page).getByRole("link", { name: "Clientes" }).click();
+    await expect(page).toHaveURL(/\/clientes$/);
     await page.getByLabel("Buscar por nome ou CNPJ").fill(cnpj2);
-    await page.getByRole("button", { name: "Buscar" }).click();
+    // A busca é aplicada pela API e fica no endereço (spec web-layout).
+    await expect(page).toHaveURL(/busca=/);
     await expect(page.getByRole("link", { name: nome })).toBeVisible();
+    await expect(page.getByRole("table", { name: "Clientes" }).getByRole("row")).toHaveCount(2);
   });
 });

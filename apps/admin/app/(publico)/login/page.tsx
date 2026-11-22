@@ -11,7 +11,11 @@ export default async function LoginPage({
 }) {
   const { next, redefinida } = await searchParams;
   return (
-    <TelaAutenticacao titulo="Admin Super PDV" descricao="Acesso da equipe Super PDV.">
+    <TelaAutenticacao
+      contexto="Admin da equipe Super PDV"
+      titulo="Admin Super PDV"
+      descricao="Acesso da equipe Super PDV."
+    >
       <FormLogin
         acao={entrar}
         destino={destinoSeguro(next)}

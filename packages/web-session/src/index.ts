@@ -19,3 +19,4 @@ export {
   textos,
 } from "./formularios";
 export { carregar } from "./navegacao";
+export { COOKIE_MENU } from "./constantes";

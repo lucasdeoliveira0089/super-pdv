@@ -32,6 +32,17 @@ export async function entrarComoEquipe(page: Page): Promise<void> {
 }
 
 export async function sair(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Sair" }).click();
+  // Páginas autenticadas: "Sair" fica no menu do usuário, no rodapé do menu lateral.
+  // Telas sem menu (ex.: "Acesso pelo PDV") têm o botão direto.
+  const botao = page.getByRole("button", { name: "Sair", exact: true });
+  if (await botao.isVisible()) {
+    await botao.click();
+  } else {
+    await page.getByRole("button", { name: /^Menu do usuário/ }).click();
+    await page.getByRole("menuitem", { name: "Sair" }).click();
+  }
   await expect(page).toHaveURL(/\/login/);
 }
+
+/** Menu lateral principal (evita confundir com os links da trilha de navegação). */
+export const menu = (page: Page) => page.getByRole("navigation", { name: "Menu principal" });

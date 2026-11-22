@@ -1,19 +1,12 @@
 import Link from "next/link";
-import { clienteSchema, formatarCnpj } from "@super-pdv/shared";
+import { clienteSchema } from "@super-pdv/shared";
 import { Badge } from "@super-pdv/ui/components/badge";
 import { Button } from "@super-pdv/ui/components/button";
 import { BotaoEnviar } from "@super-pdv/ui/components/formulario-cliente";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@super-pdv/ui/components/table";
 import { carregar } from "@super-pdv/web-session";
 import { CabecalhoPagina } from "@super-pdv/web-session/telas";
 import { api } from "../../../../lib/sessao";
+import { TabelaEmpresasDoCliente } from "../../tabelas";
 import { alterarSituacaoCliente } from "../acoes";
 import { BotaoRedefinirSenhaDono } from "../formularios";
 
@@ -47,39 +40,7 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
             <Link href={`/clientes/${cliente.id}/empresas/nova`}>Nova empresa</Link>
           </Button>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome fantasia</TableHead>
-              <TableHead>CNPJ</TableHead>
-              <TableHead>Razão social</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cliente.empresas.map((e) => (
-              <TableRow key={e.id}>
-                <TableCell className="font-medium">{e.nomeFantasia}</TableCell>
-                <TableCell>{formatarCnpj(e.cnpj)}</TableCell>
-                <TableCell>{e.razaoSocial}</TableCell>
-                <TableCell>
-                  <Badge variant={e.ativa ? "secondary" : "outline"}>
-                    {e.ativa ? "Ativa" : "Inativa"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Link
-                    href={`/clientes/${cliente.id}/empresas/${e.id}`}
-                    className="text-sm underline-offset-4 hover:underline"
-                  >
-                    Editar
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <TabelaEmpresasDoCliente clienteId={cliente.id} empresas={cliente.empresas} />
       </section>
 
       <section>

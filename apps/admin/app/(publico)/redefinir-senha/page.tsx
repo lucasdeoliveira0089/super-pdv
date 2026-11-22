@@ -10,7 +10,7 @@ export default async function RedefinirSenhaPage({
 }) {
   const { token = "" } = await searchParams;
   return (
-    <TelaAutenticacao titulo="Criar nova senha">
+    <TelaAutenticacao contexto="Admin da equipe Super PDV" titulo="Criar nova senha">
       <FormRedefinirSenha acao={confirmarRecuperacao} token={token} />
     </TelaAutenticacao>
   );

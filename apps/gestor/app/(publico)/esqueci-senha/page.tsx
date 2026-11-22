@@ -7,6 +7,7 @@ export const metadata = { title: "Esqueci minha senha — Gestor Super PDV" };
 export default function EsqueciSenhaPage() {
   return (
     <TelaAutenticacao
+      contexto="Gestor das suas empresas"
       titulo="Esqueci minha senha"
       descricao="Informe o seu e-mail para receber um link de redefinição."
       rodape={

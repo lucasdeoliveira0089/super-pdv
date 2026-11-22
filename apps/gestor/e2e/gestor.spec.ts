@@ -3,6 +3,7 @@ import {
   cadastrarUsuario,
   DEMO,
   entrar,
+  menu,
   sair,
   tentarEntrar,
   trocarSenhaObrigatoria,
@@ -60,7 +61,8 @@ test.describe("Gerente", () => {
 
   test("endereço reservado (editar um Administrador) mostra acesso negado", async ({ page }) => {
     await entrar(page, DEMO.gerente);
-    await page.getByRole("link", { name: "Usuários" }).click();
+    await menu(page).getByRole("link", { name: "Usuários" }).click();
+    await expect(page).toHaveURL(/\/usuarios$/);
     await page.getByRole("link", { name: "Administrador Demonstração" }).click();
     await expect(page).toHaveURL(/\/usuarios\/[0-9a-f-]{36}$/);
     await expect(page.getByRole("link", { name: "Editar" })).toHaveCount(0);
@@ -118,12 +120,16 @@ test.describe("usuários", () => {
   test("filtro por papel", async ({ page }) => {
     await entrar(page, DEMO.dono);
     await page.goto("/usuarios");
-    await page.getByLabel("Papel").selectOption({ label: "Gerente" });
-    await page.getByRole("button", { name: "Filtrar" }).click();
+    await page.getByRole("button", { name: "Filtrar por papel" }).click();
+    await page.getByRole("menuitemradio", { name: "Gerente" }).click();
     await expect(page).toHaveURL(/papel=gerente/);
-    const papeis = await page.locator("tbody tr td:nth-child(3)").allTextContents();
-    expect(papeis.length).toBeGreaterThan(0);
-    expect(new Set(papeis)).toEqual(new Set(["Gerente"]));
+    await expect(page.getByRole("button", { name: "Filtrar por papel: Gerente" })).toBeVisible();
+    // A lista é refeita pelo servidor: espera mostrar só Gerentes.
+    await expect
+      .poll(async () => [
+        ...new Set(await page.locator("tbody tr td:nth-child(3)").allTextContents()),
+      ])
+      .toEqual(["Gerente"]);
   });
 });
 

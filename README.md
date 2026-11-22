@@ -157,6 +157,31 @@ pnpm --filter @super-pdv/gestor test:e2e # Playwright contra o build de produç�
 
 Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`.
 
+### Layout
+
+Admin e gestor compartilham o mesmo layout, baseado nos blocos `login-04` e `sidebar-07` do shadcn/ui (spec `web-layout`):
+
+- **Telas de autenticação**: formulário à esquerda e painel da marca à direita, que some no celular (`TelaAutenticacao`).
+- **Casca das páginas autenticadas** (`CascaApp`):
+  - menu lateral com ícones, que recolhe com Ctrl+B (o estado fica no cookie `sidebar_state`) e vira gaveta no celular;
+  - no topo, o cliente (gestor) ou "Equipe Super PDV" (admin), só para identificar;
+  - no rodapé, o usuário com "Trocar senha" e "Sair";
+  - cabeçalho com trilha de navegação montada a partir do endereço.
+- **Listagens** (`DataTable` + `BarraFiltros`): ordenação, menu "Colunas" e paginação de 10 no navegador. A busca e os filtros vão para o endereço da página (`?busca=`, `?papel=`) e são aplicados pela API.
+
+Onde fica cada parte:
+
+| O quê                                              | Onde                                                                                           |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Layout, trilha, menu do usuário e barra de filtros | `packages/web-session/src` (`autenticacao.tsx`, `casca.tsx`, `trilha.ts`, `barra-filtros.tsx`) |
+| `DataTable` e componentes do shadcn                | `packages/ui/src/components`                                                                   |
+| Cor de destaque (violeta) e demais tokens do tema  | `packages/ui/src/styles/globals.css`                                                           |
+| Colunas de cada listagem (componentes de cliente)  | `apps/<app>/app/(app)/tabelas.tsx`                                                             |
+
+Para uma nova listagem: carregue os dados na página (Server Component), defina as colunas com `colunasDe<T>()` num componente de cliente e passe a `BarraFiltros` com os parâmetros que a API aceita. Para um novo item de menu, adicione a chave do ícone em `ICONES` (`casca.tsx`) e o item no `layout.tsx` do app.
+
+Componentes novos do shadcn entram pelo CLI ou pelo MCP do shadcn, sempre no `packages/ui`: `pnpm --dir packages/ui exec shadcn add <componente>`.
+
 ## PDV (`apps/pdv`)
 
 Aplicativo desktop Electron. O renderer (React) não tem acesso ao Node.js: toda comunicação com o processo principal passa pela API tipada exposta no preload (`window.superPdv`).
