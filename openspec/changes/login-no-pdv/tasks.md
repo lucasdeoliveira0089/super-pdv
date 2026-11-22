@@ -20,7 +20,7 @@
 ## 4. Documentação e verificação
 
 - [x] 4.1 Documentar no README a configuração das URLs no PDV e o fluxo de login; verificar seguindo os passos
-- [ ] 4.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` e `openspec validate login-no-pdv --strict`; verificar sucesso e o job Windows do CI verde no PR
+- [x] 4.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` e `openspec validate login-no-pdv --strict`; verificar sucesso e o job Windows do CI verde no PR
 
 ## Workflow follow-up
 
