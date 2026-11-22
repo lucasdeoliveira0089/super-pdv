@@ -1,58 +1,67 @@
 import { useEffect, useState } from "react";
-import { Badge } from "@super-pdv/ui/components/badge";
-import { Button } from "@super-pdv/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@super-pdv/ui/components/card";
-import type { LocalDbStatus } from "../../shared/ipc";
+import type { CodigoErroPdv, SessaoPdv } from "../../shared/ipc";
+import { Moldura } from "./componentes";
+import { type Etapa, etapaDaSessao, trocarEmpresa } from "./fluxo";
+import { TelaEscolherEmpresa, TelaSemEmpresa } from "./telas/empresa";
+import { TelaLogin } from "./telas/login";
+import { TelaPrincipal } from "./telas/principal";
+import { TelaTrocarSenha } from "./telas/trocar-senha";
 
 export function App() {
-  const [localDb, setLocalDb] = useState<LocalDbStatus | null>(null);
+  const [etapa, setEtapa] = useState<Etapa>({ tela: "carregando" });
 
   useEffect(() => {
-    window.superPdv.localDb
-      .status()
-      .then(setLocalDb)
-      .catch(() => setLocalDb({ status: "indisponivel" }));
+    window.superPdv.sessao
+      .obter()
+      .then(({ sessao, semConexao }) =>
+        setEtapa(etapaDaSessao(sessao, semConexao ? "SEM_CONEXAO" : undefined)),
+      )
+      .catch(() => setEtapa({ tela: "login" }));
   }, []);
 
-  return (
-    <main className="flex min-h-svh items-center justify-center p-6 font-sans">
-      <Card className="w-full max-w-md" data-testid="pdv-welcome">
-        <CardHeader>
-          <CardTitle>Super PDV — Caixa</CardTitle>
-          <CardDescription>Ponto de venda.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LocalDbIndicator status={localDb} />
-        </CardContent>
-        <CardFooter>
-          <Button autoFocus>Abrir caixa</Button>
-        </CardFooter>
-      </Card>
-    </main>
-  );
-}
+  const aoSessao = (sessao: SessaoPdv) => setEtapa(etapaDaSessao(sessao));
+  const aoFalhaSessao = (codigo: CodigoErroPdv) =>
+    setEtapa({ tela: "login", aviso: codigo === "SEM_CONEXAO" ? codigo : "SESSAO_EXPIRADA" });
+  const sair = () => {
+    void window.superPdv.auth.sair().finally(() => setEtapa({ tela: "login" }));
+  };
 
-function LocalDbIndicator({ status }: { status: LocalDbStatus | null }) {
-  if (!status) {
-    return <Badge variant="outline">Banco local: verificando…</Badge>;
+  switch (etapa.tela) {
+    case "carregando":
+      return <Moldura titulo="Super PDV — Caixa" descricao="Carregando…" />;
+    case "login":
+      // `key`: cada volta ao login começa com o formulário limpo.
+      return <TelaLogin key={etapa.aviso ?? "login"} aviso={etapa.aviso} aoEntrar={aoSessao} />;
+    case "trocar-senha":
+      return (
+        <TelaTrocarSenha
+          sessao={etapa.sessao}
+          aoTrocar={aoSessao}
+          aoFalhaSessao={aoFalhaSessao}
+          aoSair={sair}
+        />
+      );
+    case "sem-empresa":
+      return <TelaSemEmpresa sessao={etapa.sessao} aoSair={sair} />;
+    case "escolher-empresa":
+      return (
+        <TelaEscolherEmpresa
+          sessao={etapa.sessao}
+          podeVoltar={etapa.podeVoltar}
+          aoEscolher={aoSessao}
+          aoVoltar={() => setEtapa(etapaDaSessao(etapa.sessao))}
+          aoFalhaSessao={aoFalhaSessao}
+          aoSair={sair}
+        />
+      );
+    case "principal":
+      return (
+        <TelaPrincipal
+          sessao={etapa.sessao}
+          empresa={etapa.empresa}
+          aoTrocarEmpresa={() => setEtapa(trocarEmpresa(etapa))}
+          aoSair={sair}
+        />
+      );
   }
-  if (status.status === "operante") {
-    return (
-      <Badge data-testid="local-db-status" data-status="operante">
-        Banco local: operante (SQLite {status.sqliteVersion})
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="destructive" data-testid="local-db-status" data-status="indisponivel">
-      Banco local: indisponível
-    </Badge>
-  );
 }

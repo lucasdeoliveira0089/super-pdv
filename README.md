@@ -19,7 +19,7 @@ Software de gestão comercial para o varejo: ponto de venda (PDV) desktop, gesto
 | ------ | ----- | -------------------------------------- | ----------------------------------------------------------- |
 | admin  | 3001  | Equipe Super PDV                       | Cadastrar clientes e as empresas (CNPJs) que usam o sistema |
 | gestor | 3000  | Cliente (Dono, Administrador, Gerente) | Consultar as empresas e gerenciar usuários                  |
-| pdv    | —     | Operação de caixa                      | Vender (login no PDV chega na mudança `login-no-pdv`)       |
+| pdv    | —     | Operação de caixa (todos os papéis)    | Entrar e escolher a empresa (CNPJ) de operação do caixa     |
 | api    | 3333  | Todos os apps                          | Regras de negócio, autenticação e dados                     |
 
 Hierarquia: **Cliente** (tenant) → **Empresa** (CNPJ; cada estabelecimento tem o seu) → **PDV**. Os dados de cada cliente ficam isolados no PostgreSQL por Row Level Security.
@@ -75,7 +75,9 @@ Credenciais criadas pelo `pnpm db:seed` (somente desenvolvimento):
 | gestor | `dono@demo.local`       | `Demo#Senha2026`  | Dono (todas as empresas)                 |
 | gestor | `admin@demo.local`      | `Demo#Senha2026`  | Administrador (todas as empresas)        |
 | gestor | `gerente@demo.local`    | `Demo#Senha2026`  | Gerente (Mercado Demo Centro)            |
-| gestor | `operador@demo.local`   | `Demo#Senha2026`  | Operador de caixa (sem acesso ao gestor) |
+| pdv    | `operador@demo.local`   | `Demo#Senha2026`  | Operador de caixa (sem acesso ao gestor) |
+
+Todos os usuários do cliente entram também no PDV: o Operador e o Gerente veem só a Mercado Demo Centro (escolhida automaticamente); o Dono e o Administrador escolhem entre as duas empresas.
 
 O comando é idempotente e recusa rodar com `NODE_ENV=production`.
 
@@ -171,6 +173,32 @@ O banco local do caixa (SQLite) fica em `%APPDATA%\Super PDV\super-pdv.db`. O in
 
 O binário do Electron é baixado no `pnpm install` (script `postinstall` do app). Se ele estiver ausente, execute `pnpm --filter @super-pdv/pdv run postinstall`.
 
+### Login e sessão
+
+O PDV usa as mesmas credenciais do gestor, validadas online na API (é preciso conexão para entrar):
+
+1. **Login** com e-mail e senha, operável só pelo teclado (Tab e Enter). "Esqueci minha senha" abre a recuperação de senha do gestor no navegador.
+2. **Senha temporária**: quem foi cadastrado com senha temporária define a nova senha no próprio PDV (Esc desiste e volta ao login).
+3. **Empresa de operação**: com uma única empresa ativa, ela é escolhida automaticamente; com várias, o usuário escolhe (setas e Enter). Sem empresa ativa, o PDV avisa e não prossegue.
+4. **Tela principal**: nome fantasia e CNPJ da empresa, "Trocar empresa" (quando há mais de uma) e "Sair".
+
+A sessão sobrevive ao fechar o PDV: só o processo principal conhece os tokens. O token de renovação e a empresa escolhida ficam em `%APPDATA%Super PDVsession.bin`, cifrados com a criptografia do Windows (DPAPI, por usuário do sistema); o token de acesso fica só em memória. Se a API recusar a sessão (usuário desativado, cliente suspenso ou sessão encerrada), o PDV apaga o arquivo e volta ao login; "Sair" faz o mesmo e encerra a sessão na API.
+
+### Endereços da API e do gestor
+
+O processo principal usa duas variáveis, gravadas no build pelo electron-vite e validadas ao abrir o app:
+
+| Variável               | Padrão                  | Uso                                    |
+| ---------------------- | ----------------------- | -------------------------------------- |
+| `MAIN_VITE_API_URL`    | `http://localhost:3333` | API central (login e sessão)           |
+| `MAIN_VITE_GESTOR_URL` | `http://localhost:3000` | Página "Esqueci minha senha" do gestor |
+
+Para outro ambiente, copie `apps/pdv/.env.example` para `apps/pdv/.env` e ajuste antes do `build`/`dist`. Fora do app instalado (`dev` e testes), as mesmas variáveis no ambiente do processo têm prioridade.
+
+Para testar localmente: `pnpm db:up`, `pnpm db:migrate`, `pnpm db:seed`, suba a API (`pnpm --filter @super-pdv/api dev`) e abra o PDV (`pnpm --filter @super-pdv/pdv dev`) com uma das credenciais da tabela acima.
+
+Os testes E2E do PDV não precisam de banco nem de Docker: usam um servidor simulado da API (`apps/pdv/test/api-simulada.ts`), que valida requisições e respostas com os mesmos schemas de `packages/shared` usados pela API real.
+
 ### Módulos nativos
 
 O `better-sqlite3` usa N-API e já traz binários pré-compilados: funciona no Node e no Electron sem recompilação e sem ferramentas de compilação C++. Ao adicionar outro módulo nativo (porta serial, DLL de TEF/SAT), prefira bibliotecas N-API; se for inevitável recompilar para o Electron, será preciso adicionar `@electron/rebuild` e instalar o Visual Studio Build Tools.
@@ -183,10 +211,10 @@ O `better-sqlite3` usa N-API e já traz binários pré-compilados: funciona no N
 
 Workflow em `.github/workflows/ci.yml`:
 
-| Job           | Quando                             | O que faz                                                                                                                                                 |
-| ------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `verify`      | Todo pull request e push na `main` | Lint, checagem de tipos, testes (com PostgreSQL efêmero via Testcontainers) e build **apenas dos pacotes afetados** e seus dependentes; E2E dos apps web. |
-| `pdv-windows` | Push na `main` que afete o PDV     | Build, testes unitários e E2E do PDV em Windows; gera o instalador e o publica como artefato da execução (`super-pdv-instalador-windows`).                |
+| Job           | Quando                                         | O que faz                                                                                                                                                     |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify`      | Todo pull request e push na `main`             | Lint, checagem de tipos, testes (com PostgreSQL efêmero via Testcontainers) e build **apenas dos pacotes afetados** e seus dependentes; E2E dos apps web.     |
+| `pdv-windows` | Pull request ou push na `main` que afete o PDV | Build, testes unitários e E2E do PDV em Windows; no push na `main`, gera o instalador e o publica como artefato da execução (`super-pdv-instalador-windows`). |
 
 Segredos opcionais do repositório (Settings → Secrets and variables → Actions):
 
