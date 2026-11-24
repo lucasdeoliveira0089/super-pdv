@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { celularSchema, celularValido, formatarCelular, normalizarCelular } from "./celular";
+import {
+  celularSchema,
+  celularValido,
+  formatarCelular,
+  mascararCelular,
+  normalizarCelular,
+} from "./celular";
 
 describe("Celular", () => {
   it.each([
@@ -36,5 +42,28 @@ describe("Celular", () => {
   it("formata com máscara", () => {
     expect(formatarCelular("11987654321")).toBe("(11) 98765-4321");
     expect(formatarCelular("123")).toBe("123");
+  });
+});
+
+describe("mascararCelular", () => {
+  it.each([
+    ["", ""],
+    ["1", "(1"],
+    ["11", "(11"],
+    ["119", "(11) 9"],
+    ["1198765", "(11) 98765"],
+    ["11987654", "(11) 98765-4"],
+    ["11987654321", "(11) 98765-4321"],
+    ["119876543210", "(11) 98765-4321"],
+    ["(11) 98765-4321", "(11) 98765-4321"],
+    ["+55 11 98765-4321", "(11) 98765-4321"],
+    ["11a9b8", "(11) 98"],
+  ])("mascararCelular(%j) = %j", (valor, esperado) => {
+    expect(mascararCelular(valor)).toBe(esperado);
+  });
+
+  it("apagar até o DDD remove o parêntese", () => {
+    expect(mascararCelular("(1")).toBe("(1");
+    expect(mascararCelular("(")).toBe("");
   });
 });

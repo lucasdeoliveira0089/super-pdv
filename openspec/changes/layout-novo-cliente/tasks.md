@@ -53,6 +53,10 @@
 
 - [x] 11.1 Remover a coluna "Dono" da tabela de clientes do admin (e do menu "Colunas"). Verificar com o E2E de largura: os cabeçalhos da tabela são Cliente, Empresas e Situação.
 
+## 12. Máscara do celular na digitação
+
+- [x] 12.1 Criar `mascararCelular` em `packages/shared` (máscara progressiva `(XX) XXXXX-XXXX`, só números, até 11 dígitos, ignorando `+55`) e usá-la no campo Celular do admin durante a digitação, como no CNPJ. Verificar com testes Vitest da função e com o E2E de máscaras: digitar `11987654321` mostra `(11) 98765-4321`.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

@@ -17,33 +17,9 @@ import {
   criarCliente,
   redefinirSenhaDono,
 } from "./acoes";
+import { CampoCelular } from "./campo-celular";
 import { CampoCnpj } from "./campo-cnpj";
 import { CamposEndereco, errosDoEndereco, valoresDoEndereco } from "./campos-endereco";
-
-/** Formata o celular ao sair do campo, sem impedir a digitação livre. */
-const mascararCelular = (e: React.FocusEvent<HTMLInputElement>) => {
-  e.currentTarget.value = formatarCelular(e.currentTarget.value);
-};
-
-function CampoCelular(props: {
-  name: string;
-  defaultValue?: string;
-  erros?: string[];
-  rotulo?: string;
-  obrigatorio?: boolean;
-}) {
-  return (
-    <CampoTexto
-      rotulo="Celular"
-      type="tel"
-      inputMode="tel"
-      autoComplete="tel"
-      placeholder="(11) 98765-4321"
-      onBlur={mascararCelular}
-      {...props}
-    />
-  );
-}
 
 export function FormNovoCliente() {
   // Sucesso: a ação redireciona para o detalhe do cliente.

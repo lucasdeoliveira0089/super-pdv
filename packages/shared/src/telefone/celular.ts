@@ -26,6 +26,18 @@ export function formatarCelular(valor: string): string {
   return `(${c.slice(0, 2)}) ${c.slice(2, 7)}-${c.slice(7)}`;
 }
 
+/**
+ * Máscara progressiva para digitação: `(XX) XXXXX-XXXX`. Só números (até 11
+ * dígitos); um `+55` no início é ignorado. Não valida.
+ */
+export function mascararCelular(valor: string): string {
+  const d = normalizarCelular(valor).slice(0, 11);
+  if (d.length === 0) return "";
+  if (d.length <= 2) return `(${d}`;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
 /** Aceita celular com ou sem máscara e produz os 11 dígitos. */
 export const celularSchema = z
   .string({ error: "Informe o celular" })

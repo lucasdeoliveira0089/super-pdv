@@ -54,3 +54,15 @@ Membros da equipe SHALL cadastrar um usuário Dono para um cliente no detalhe do
 #### Scenario: Usuário de cliente não cadastra Dono pelo admin
 - **WHEN** um usuário de cliente tenta usar a rota de cadastro de Dono do admin
 - **THEN** a API responde 401
+
+### Requirement: Máscara do celular do responsável
+O campo celular do responsável nos formulários do admin SHALL aplicar a máscara `(XX) XXXXX-XXXX` durante a digitação, aceitando apenas números (até 11 dígitos) e ignorando o `+55` de um número colado.
+
+#### Scenario: Digitação do celular
+- **WHEN** a equipe digita `11987654321` no campo celular
+- **THEN** o campo exibe `(11) 98765-4321` já durante a digitação
+
+#### Scenario: Celular colado com código do país
+- **WHEN** a equipe cola `+55 11 98765-4321` no campo celular
+- **THEN** o campo exibe `(11) 98765-4321`
+

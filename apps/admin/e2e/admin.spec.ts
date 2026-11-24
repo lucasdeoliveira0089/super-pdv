@@ -151,7 +151,7 @@ test.describe("clientes e empresas", () => {
     await expect(localizacao.getByText("Informe o número", { exact: true })).toBeVisible();
     await expect(localizacao.getByLabel("Número")).toHaveAttribute("aria-invalid", "true");
     // Tudo o que foi digitado continua no formulário após o erro.
-    await expect(page.getByLabel("Celular")).toHaveValue("(11) 3456-7890");
+    await expect(page.getByLabel("Celular")).toHaveValue("(11) 34567-890");
     await expect(page.getByLabel("Nome do responsável")).toHaveValue("Maria E2E");
     await expect(page.getByLabel("Logradouro")).toHaveValue("Avenida Paulista");
     await expect(page.getByLabel("UF")).toHaveValue("SP");
@@ -208,9 +208,7 @@ test.describe("clientes e empresas", () => {
     await expect(page.getByRole("table", { name: "Clientes" }).getByRole("row")).toHaveCount(2);
   });
 
-  test("máscara do CNPJ aceita números e letras e ignora letra no dígito verificador", async ({
-    page,
-  }) => {
+  test("máscaras de CNPJ e celular são aplicadas durante a digitação", async ({ page }) => {
     await entrarComoEquipe(page);
     await page.goto("/clientes/novo");
     const cnpj = page.getByLabel("CNPJ");
@@ -224,6 +222,14 @@ test.describe("clientes e empresas", () => {
     await expect(cnpj).toHaveValue("11.222.333/0001-8");
     await cnpj.fill("12.ABC.345/01DE-35");
     await expect(cnpj).toHaveValue("12.ABC.345/01DE-35");
+
+    const celular = page.getByLabel("Celular");
+    await celular.pressSequentially("1198765");
+    await expect(celular).toHaveValue("(11) 98765");
+    await celular.pressSequentially("4321");
+    await expect(celular).toHaveValue("(11) 98765-4321");
+    await celular.fill("+55 11 98765-4321");
+    await expect(celular).toHaveValue("(11) 98765-4321");
   });
 
   test("altera o responsável; cliente antigo mostra que não há responsável", async ({ page }) => {

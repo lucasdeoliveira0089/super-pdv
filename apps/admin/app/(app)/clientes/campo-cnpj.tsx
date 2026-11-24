@@ -28,7 +28,6 @@ export function CampoCnpj({
       autoComplete="off"
       spellCheck={false}
       placeholder="00.000.000/0000-00"
-      maxLength={18}
       value={valor}
       onChange={(e) => setValor(mascararCnpj(e.target.value))}
       {...props}
