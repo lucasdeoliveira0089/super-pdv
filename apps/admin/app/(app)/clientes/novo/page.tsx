@@ -8,7 +8,7 @@ export default function NovoClientePage() {
     <>
       <CabecalhoPagina
         titulo="Novo cliente"
-        descricao="Cadastra a primeira empresa com o endereço e o responsável pelo cliente. O Dono é cadastrado depois, no detalhe do cliente."
+        descricao="Cadastre o cliente que acabou de contratar o Super PDV. O acesso do Dono é criado em seguida, no detalhe do cliente."
       />
       <FormNovoCliente />
     </>
