@@ -56,7 +56,7 @@
 ## 6. Documentação e verificação final
 
 - [x] 6.1 Atualizar o README com a descrição do cadastro de cliente, a tabela do seed e `CEP_API_URL`. Verificar que os comandos citados rodam como escritos.
-- [ ] 6.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` e `openspec validate dados-cadastrais-cliente --strict`, e verificar sucesso local e o CI verde no PR.
+- [x] 6.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` e `openspec validate dados-cadastrais-cliente --strict`, e verificar sucesso local e o CI verde no PR.
 
 ## Workflow follow-up
 
