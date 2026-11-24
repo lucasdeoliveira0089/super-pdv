@@ -106,7 +106,7 @@ export function FormNovoCliente() {
           />
         </div>
       </SecaoFormulario>
-      <div>
+      <div className="flex justify-end">
         <BotaoEnviar pendente="Cadastrando…">Cadastrar cliente</BotaoEnviar>
       </div>
     </form>
