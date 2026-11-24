@@ -19,6 +19,13 @@
 
 - [x] 4.1 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam. Conferir no navegador, na tela "Novo cliente", o tema claro e os cartões.
 
+## 5. Dono fora do cadastro e sem textos de ajuda
+
+- [ ] 5.1 Remover os textos de ajuda do formulário "Novo cliente" (descrições dos cartões e dicas dos campos) e o cartão "Dono". Verificar com o E2E de cadastro: três cartões (Empresa, Localização, Responsável) e nenhum campo de Dono.
+- [ ] 5.2 Na API, tirar `dono` de `clienteCriarSchema`, fazer `ClientesService.criar` devolver o `Cliente` sem criar usuário e criar `POST /v1/admin/clientes/:id/donos` (`{ nome, email }` → `{ dono, senhaTemporaria }`). Verificar com `admin-clientes.int.test.ts`: cliente criado sem usuários, Dono cadastrado com senha temporária que exige troca, e-mail repetido com 409 no campo `email`, cliente inexistente com 404 e usuário de cliente com 401.
+- [ ] 5.3 No admin, fazer o cadastro de cliente redirecionar ao detalhe; no detalhe, mostrar "Nenhum Dono cadastrado" e o botão "Cadastrar Dono"; criar a tela `/clientes/[id]/donos/novo` com a senha temporária exibida uma vez. Verificar com um E2E: cadastrar cliente, ver "Nenhum Dono cadastrado", cadastrar o Dono, ver a senha e o Dono no detalhe, e ver o erro de e-mail repetido junto ao campo.
+- [ ] 5.4 Atualizar o README (cadastro de cliente e do Dono). Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

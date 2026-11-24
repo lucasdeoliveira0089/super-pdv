@@ -146,8 +146,8 @@ export function CamposEndereco({
           onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
           erros={erros?.cep}
         />
-        <FieldDescription role="status" aria-live="polite">
-          {aviso ? AVISOS[aviso] : "Ao informar o CEP, o endereço é preenchido automaticamente."}
+        <FieldDescription role="status" aria-live="polite" className="empty:hidden">
+          {aviso && AVISOS[aviso]}
         </FieldDescription>
       </div>
       <CampoTexto
@@ -165,7 +165,6 @@ export function CamposEndereco({
           name="numero"
           rotulo="Número"
           obrigatorio={obrigatorio}
-          descricao='Use "S/N" se não houver.'
           value={v.numero}
           onChange={aoMudar}
           erros={erros?.numero}
@@ -214,14 +213,7 @@ export function CamposEndereco({
   );
 
   if (cartao) {
-    return (
-      <SecaoFormulario
-        titulo="Localização"
-        descricao="Endereço do estabelecimento. Informe o CEP para preencher o restante."
-      >
-        {campos}
-      </SecaoFormulario>
-    );
+    return <SecaoFormulario titulo="Localização">{campos}</SecaoFormulario>;
   }
   return (
     <FieldSet>

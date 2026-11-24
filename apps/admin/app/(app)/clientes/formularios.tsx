@@ -37,7 +37,6 @@ function CampoCelular(props: {
       inputMode="tel"
       autoComplete="tel"
       placeholder="(11) 98765-4321"
-      descricao="Com DDD."
       onBlur={mascararCelular}
       {...props}
     />
@@ -64,13 +63,12 @@ export function FormNovoCliente() {
       <p className="text-muted-foreground text-sm">
         Campos marcados com <span className="text-destructive">*</span> são obrigatórios.
       </p>
-      <SecaoFormulario titulo="Empresa" descricao="Dados do primeiro estabelecimento do cliente.">
+      <SecaoFormulario titulo="Empresa">
         <CampoTexto
           name="cnpj"
           rotulo="CNPJ"
           obrigatorio
           className="sm:w-64"
-          descricao="Numérico ou alfanumérico, com ou sem máscara."
           autoFocus
           defaultValue={v?.cnpj}
           erros={c?.["empresa.cnpj"]}
@@ -87,17 +85,13 @@ export function FormNovoCliente() {
             name="nomeFantasia"
             rotulo="Nome fantasia"
             obrigatorio
-            descricao="Também será o nome do cliente."
             defaultValue={v?.nomeFantasia}
             erros={c?.["empresa.nomeFantasia"]}
           />
         </div>
       </SecaoFormulario>
       <CamposEndereco cartao valores={v} erros={errosDoEndereco(c, "empresa.endereco.")} />
-      <SecaoFormulario
-        titulo="Responsável"
-        descricao="Contato da equipe Super PDV com o cliente. Não dá acesso ao sistema."
-      >
+      <SecaoFormulario titulo="Responsável">
         <CampoTexto
           name="responsavelNome"
           rotulo="Nome do responsável"

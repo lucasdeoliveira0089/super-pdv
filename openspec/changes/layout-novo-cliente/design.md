@@ -45,7 +45,15 @@ O formulário passa a `max-w-3xl`. Dentro de cada cartão:
 
 Abaixo de `sm`, tudo vira uma coluna.
 
+### Dono fora do cadastro de cliente
+`clienteCriarSchema` perde `dono`, e `ClientesService.criar` grava só cliente e empresa, ainda numa transação. A resposta passa a ser o próprio `Cliente`, sem senha. Para o Dono, há uma rota nova, `POST /v1/admin/clientes/:id/donos`, com `{ nome, email }`, no mesmo controller e com a mesma proteção de equipe. Ela devolve `{ dono, senhaTemporaria }` e reaproveita a geração de senha e a tradução da unicidade do e-mail (409 no campo `email`) que já existiam no cadastro. No admin:
+- o formulário "Novo cliente" redireciona para o detalhe depois de salvar;
+- o detalhe ganha "Cadastrar Dono", que abre `/clientes/[id]/donos/novo` (nome e e-mail) e mostra a senha temporária com o componente `SenhaTemporaria` que já existe;
+- sem Dono, o detalhe mostra "Nenhum Dono cadastrado".
+- *Alternativa: o responsável virar o Dono.* Foi descartada pelo usuário: o Dono é cadastrado à parte, depois do cliente.
+
 ## Risks / Trade-offs
 
 - [Seletores dos E2E baseados nas legendas antigas ("Endereço da empresa")] → Ajustados na mesma mudança. Os rótulos dos campos não mudam, exceto "Complemento" no cartão, que os testes não usam.
+- [Cliente fica sem acesso até alguém cadastrar o Dono] → O detalhe deixa isso visível ("Nenhum Dono cadastrado") com o botão para cadastrar.
 - [Quem usava o admin no escuro perde essa opção] → Foi o pedido. O botão de troca fica como evolução, com os tokens escuros preservados.

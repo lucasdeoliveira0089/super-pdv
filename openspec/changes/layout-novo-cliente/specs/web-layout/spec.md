@@ -14,11 +14,11 @@ O admin SHALL abrir sempre no tema claro, independentemente da preferência de t
 - **THEN** o gestor continua seguindo o tema do sistema operacional
 
 ### Requirement: Formulário de cadastro em cartões
-O formulário "Novo cliente" do admin SHALL agrupar os campos em cartões com título e descrição curta, nesta ordem: "Empresa" (CNPJ, razão social, nome fantasia), "Localização" (CEP, logradouro, número, complemento, bairro, cidade, UF), "Responsável" (nome, celular, e-mail) e "Dono" (nome, e-mail).
+O formulário "Novo cliente" do admin SHALL agrupar os campos em cartões com título, sem textos de ajuda, nesta ordem: "Empresa" (CNPJ, razão social, nome fantasia), "Localização" (CEP, logradouro, número, complemento, bairro, cidade, UF) e "Responsável" (nome, celular, e-mail).
 
 #### Scenario: Cartões do novo cliente
 - **WHEN** a equipe abre o formulário "Novo cliente"
-- **THEN** são exibidos os cartões "Empresa", "Localização", "Responsável" e "Dono", nessa ordem, cada um com os seus campos
+- **THEN** são exibidos os cartões "Empresa", "Localização" e "Responsável", nessa ordem, cada um com os seus campos
 
 #### Scenario: Formulário no celular
 - **WHEN** a equipe abre o formulário "Novo cliente" numa tela com 390 px de largura
