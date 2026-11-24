@@ -17,6 +17,7 @@ import {
   criarCliente,
   redefinirSenhaDono,
 } from "./acoes";
+import { CampoCnpj } from "./campo-cnpj";
 import { CamposEndereco, errosDoEndereco, valoresDoEndereco } from "./campos-endereco";
 
 /** Formata o celular ao sair do campo, sem impedir a digitação livre. */
@@ -54,9 +55,8 @@ export function FormNovoCliente() {
       <AlertaErro mensagem={estado?.mensagem} />
       <SecaoFormulario titulo="Empresa">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <CampoTexto
+          <CampoCnpj
             name="cnpj"
-            rotulo="CNPJ"
             obrigatorio
             autoFocus
             defaultValue={v?.cnpj}
@@ -133,15 +133,7 @@ export function FormEmpresa({ clienteId, empresa }: { clienteId: string; empresa
         <input type="hidden" name="clienteId" value={clienteId} />
         {empresa && <input type="hidden" name="empresaId" value={empresa.id} />}
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {!empresa && (
-            <CampoTexto
-              name="cnpj"
-              rotulo="CNPJ"
-              autoFocus
-              defaultValue={v?.cnpj}
-              erros={c?.cnpj}
-            />
-          )}
+          {!empresa && <CampoCnpj name="cnpj" autoFocus defaultValue={v?.cnpj} erros={c?.cnpj} />}
           <CampoTexto
             name="razaoSocial"
             rotulo="Razão social"

@@ -208,6 +208,24 @@ test.describe("clientes e empresas", () => {
     await expect(page.getByRole("table", { name: "Clientes" }).getByRole("row")).toHaveCount(2);
   });
 
+  test("máscara do CNPJ aceita números e letras e ignora letra no dígito verificador", async ({
+    page,
+  }) => {
+    await entrarComoEquipe(page);
+    await page.goto("/clientes/novo");
+    const cnpj = page.getByLabel("CNPJ");
+    await cnpj.pressSequentially("12abc34501de35");
+    await expect(cnpj).toHaveValue("12.ABC.345/01DE-35");
+    await cnpj.fill("");
+    await cnpj.pressSequentially("11222333000181");
+    await expect(cnpj).toHaveValue("11.222.333/0001-81");
+    await cnpj.fill("");
+    await cnpj.pressSequentially("112223330001X8");
+    await expect(cnpj).toHaveValue("11.222.333/0001-8");
+    await cnpj.fill("12.ABC.345/01DE-35");
+    await expect(cnpj).toHaveValue("12.ABC.345/01DE-35");
+  });
+
   test("altera o responsável; cliente antigo mostra que não há responsável", async ({ page }) => {
     await entrarComoEquipe(page);
     const fantasia = `Responsável E2E ${unico()}`;

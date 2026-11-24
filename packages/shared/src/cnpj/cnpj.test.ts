@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cnpjSchema, cnpjValido, formatarCnpj, normalizarCnpj } from "./cnpj";
+import { cnpjSchema, cnpjValido, formatarCnpj, mascararCnpj, normalizarCnpj } from "./cnpj";
 
 describe("CNPJ", () => {
   it.each([
@@ -35,5 +35,30 @@ describe("CNPJ", () => {
     const r = cnpjSchema.safeParse("11.222.333/0001-82");
     expect(r.success).toBe(false);
     expect(r.error?.issues[0]?.message).toBe("CNPJ inválido");
+  });
+});
+
+describe("mascararCnpj", () => {
+  it.each([
+    ["", ""],
+    ["1", "1"],
+    ["112", "11.2"],
+    ["11222", "11.222"],
+    ["112223", "11.222.3"],
+    ["112223330", "11.222.333/0"],
+    ["1122233300018", "11.222.333/0001-8"],
+    ["11222333000181", "11.222.333/0001-81"],
+    ["12abc34501de35", "12.ABC.345/01DE-35"],
+    ["12.ABC.345/01DE-35", "12.ABC.345/01DE-35"],
+    [" 12 abc-345 ", "12.ABC.345"],
+    ["12ABC34501DEX3", "12.ABC.345/01DE-3"],
+    ["11222333000181999", "11.222.333/0001-81"],
+    ["ç@#", ""],
+  ])("mascararCnpj(%j) = %j", (valor, esperado) => {
+    expect(mascararCnpj(valor)).toBe(esperado);
+  });
+
+  it("aplicar a máscara de novo não muda o valor", () => {
+    expect(mascararCnpj(mascararCnpj("12abc34501de35"))).toBe("12.ABC.345/01DE-35");
   });
 });

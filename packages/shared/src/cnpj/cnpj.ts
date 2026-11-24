@@ -43,6 +43,22 @@ export function formatarCnpj(valor: string): string {
   return `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8, 12)}-${c.slice(12)}`;
 }
 
+/**
+ * Máscara progressiva para digitação: `XX.XXX.XXX/XXXX-XX`. Aceita letras e
+ * números nas 12 primeiras posições (letras em maiúsculas) e só números nos 2
+ * dígitos verificadores; o resto é ignorado. Não valida os dígitos.
+ */
+export function mascararCnpj(valor: string): string {
+  const caracteres: string[] = [];
+  for (const c of valor.toUpperCase()) {
+    if (caracteres.length === 14) break;
+    const permitido = caracteres.length < 12 ? /[0-9A-Z]/ : /[0-9]/;
+    if (permitido.test(c)) caracteres.push(c);
+  }
+  const separadores: Record<number, string> = { 2: ".", 5: ".", 8: "/", 12: "-" };
+  return caracteres.map((c, i) => (i > 0 && separadores[i] ? separadores[i] : "") + c).join("");
+}
+
 /** Aceita CNPJ com ou sem máscara e produz a forma normalizada (sem pontuação). */
 export const cnpjSchema = z
   .string({ error: "Informe o CNPJ" })

@@ -40,6 +40,11 @@
 
 - [x] 8.1 Fixar no topo o cabeçalho da casca (botão do menu e trilha), com fundo e borda inferior. Verificar com um E2E do admin: em "Novo cliente", depois de rolar até o fim, a trilha de navegação continua no topo da janela.
 
+## 9. Máscara do CNPJ
+
+- [x] 9.1 Criar `mascararCnpj` em `packages/shared` (máscara progressiva, alfanumérico nas 12 primeiras posições e numérico nos 2 dígitos verificadores) e verificar com testes Vitest: numérico, alfanumérico, minúsculas, letra no dígito verificador, texto colado com máscara e excesso de caracteres.
+- [x] 9.2 Criar o campo de CNPJ com máscara no admin e usá-lo em "Novo cliente" e "Nova empresa". Verificar com um E2E: digitar `12abc34501de35` mostra `12.ABC.345/01DE-35`, e o cadastro continua aceitando o CNPJ.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

@@ -26,6 +26,7 @@ Fora do escopo: os formulários "Nova empresa", "Editar empresa" e "Editar respo
 ### Modified Capabilities
 - `web-layout`: novos requisitos para o tema claro do admin e para formulários de cadastro agrupados em cartões, com campos obrigatórios indicados.
 - `client-provisioning`: o cadastro de cliente deixa de criar o Dono; novo requisito para cadastrar o Dono no detalhe do cliente.
+- `organization-structure`: máscara do CNPJ (numérico e alfanumérico) nos formulários de cliente e de empresa do admin.
 
 ## Impact
 
