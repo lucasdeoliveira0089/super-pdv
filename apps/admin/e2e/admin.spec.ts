@@ -350,6 +350,17 @@ test.describe("largura do conteúdo", () => {
     expect(await topo("Nome fantasia")).toBe(await topo("CNPJ"));
   });
 
+  test("cabeçalho fica fixo no topo ao rolar", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 600 });
+    await entrarComoEquipe(page);
+    await page.goto("/clientes/novo");
+    await page.mouse.wheel(0, 5000);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    const trilha = page.getByRole("navigation", { name: "Trilha de navegação" });
+    await expect(trilha).toBeInViewport();
+    expect((await trilha.boundingBox())!.y).toBeLessThan(64);
+  });
+
   test("notebook: lista ocupa a largura disponível, sem rolagem horizontal", async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await entrarComoEquipe(page);

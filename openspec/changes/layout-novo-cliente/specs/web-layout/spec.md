@@ -49,3 +49,10 @@ O conteúdo das páginas autenticadas do admin e do gestor SHALL ficar centraliz
 #### Scenario: Notebook
 - **WHEN** a equipe abre a lista de clientes numa janela de 1366 px de largura
 - **THEN** o conteúdo ocupa a largura disponível ao lado do menu, sem rolagem horizontal
+
+### Requirement: Cabeçalho fixo
+O cabeçalho das páginas autenticadas do admin e do gestor, com o botão do menu e a trilha de navegação, SHALL permanecer fixo no topo enquanto o conteúdo rola.
+
+#### Scenario: Rolar um formulário longo
+- **WHEN** a equipe rola a página "Novo cliente" até o fim
+- **THEN** o cabeçalho com a trilha "Clientes › Novo" continua visível no topo da janela

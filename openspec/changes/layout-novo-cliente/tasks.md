@@ -36,6 +36,10 @@
 - [x] 7.1 Remover `ConteudoFormulario` e as larguras máximas próprias dos formulários, para que ocupem o contêiner de 1280 px, e distribuir os campos em colunas em telas largas: Empresa e Responsável em 3 colunas; Localização em 2 linhas (CEP, logradouro e número; complemento, bairro, cidade e UF); formulários de empresa, responsável, Dono e de usuário do gestor em 2 ou 3 colunas. Verificar com o E2E de largura: título e cartões de "Novo cliente" com a largura da lista e CNPJ, razão social e nome fantasia na mesma linha a 1920 px; e uma coluna a 390 px.
 - [x] 7.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam.
 
+## 8. Cabeçalho fixo
+
+- [x] 8.1 Fixar no topo o cabeçalho da casca (botão do menu e trilha), com fundo e borda inferior. Verificar com um E2E do admin: em "Novo cliente", depois de rolar até o fim, a trilha de navegação continua no topo da janela.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.
