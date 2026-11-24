@@ -1,5 +1,16 @@
-import { expect, test } from "@playwright/test";
-import { DONO_DEMO, EQUIPE, entrar, entrarComoEquipe, gerarCnpj, menu, sair, unico } from "./util";
+import { expect, type Page, test } from "@playwright/test";
+import {
+  criarClienteSemResponsavel,
+  criarEmpresaSemEndereco,
+  DONO_DEMO,
+  EQUIPE,
+  entrar,
+  entrarComoEquipe,
+  gerarCnpj,
+  menu,
+  sair,
+  unico,
+} from "./util";
 
 test.describe("autenticação no admin", () => {
   test("página interna sem login leva ao login e volta à página pedida", async ({ page }) => {
@@ -61,45 +72,82 @@ test.describe("equipe", () => {
 });
 
 test.describe("clientes e empresas", () => {
-  test("cadastra cliente com 1ª empresa e Dono, adiciona empresa, suspende e reativa", async ({
+  /** Preenche a empresa, o responsável e o Dono do formulário "Novo cliente" (sem enviar). */
+  async function preencherNovoCliente(page: Page, fantasia: string, cnpj = gerarCnpj()) {
+    await page.getByLabel("CNPJ").fill(cnpj);
+    await page.getByLabel("Razão social").fill(`${fantasia} Ltda`);
+    await page.getByLabel("Nome fantasia").fill(fantasia);
+    await page.getByLabel("CEP").fill("01310-100");
+    // CEP conhecido pelo serviço falso: endereço preenchido e foco no número.
+    await expect(page.getByLabel("Logradouro")).toHaveValue("Avenida Paulista");
+    await expect(page.getByLabel("Número")).toBeFocused();
+    await page.getByLabel("Número").fill("1000");
+    await page.getByLabel("Nome do responsável").fill("Maria E2E");
+    await page.getByLabel("Celular").fill("11987654321");
+    await page.getByLabel("E-mail do responsável").fill(`maria.${unico()}@e2e.local`);
+    await page.getByLabel("Nome do Dono").fill("João E2E");
+    await page.getByLabel("E-mail do Dono").fill(`dono.${unico()}@e2e.local`);
+  }
+
+  /** Cadastra um cliente pelo admin e abre o detalhe; devolve o id do cliente. */
+  async function cadastrarCliente(page: Page, fantasia: string): Promise<string> {
+    await page.goto("/clientes/novo");
+    await preencherNovoCliente(page, fantasia);
+    await page.getByRole("button", { name: "Cadastrar cliente" }).click();
+    await page.getByRole("link", { name: "Ver cliente" }).click();
+    await expect(page.getByRole("heading", { name: fantasia })).toBeVisible();
+    return new URL(page.url()).pathname.split("/")[2]!;
+  }
+
+  const linhaDaEmpresa = (page: Page, fantasia: string) =>
+    page
+      .getByRole("table", { name: "Empresas do cliente" })
+      .getByRole("row")
+      .filter({ has: page.getByRole("cell", { name: fantasia, exact: true }) });
+
+  test("cadastra cliente com empresa, endereço pelo CEP, responsável e Dono; suspende e reativa", async ({
     page,
   }) => {
-    const nome = `Grupo E2E ${unico()}`;
+    const fantasia = `Mercado E2E ${unico()}`;
     const cnpj = gerarCnpj();
     await entrarComoEquipe(page);
     await page.getByRole("link", { name: "Novo cliente" }).click();
+    await expect(page.getByLabel("Nome do cliente")).toHaveCount(0);
 
-    // CNPJ inválido: erro junto ao campo e nada é salvo.
-    await page.getByLabel("Nome do cliente").fill(nome);
-    await page.getByLabel("CNPJ").fill("11.222.333/0001-82");
-    await page.getByLabel("Razão social").fill("Mercado E2E Ltda");
-    await page.getByLabel("Nome fantasia").fill("Mercado E2E");
-    await page.getByLabel("Nome do Dono").fill("João E2E");
-    await page.getByLabel("E-mail do Dono").fill(`dono.${unico()}@e2e.local`);
+    // Preenche tudo, mas com CNPJ inválido e um telefone fixo como celular.
+    await preencherNovoCliente(page, fantasia, "11.222.333/0001-82");
+    await expect(page.getByLabel("Cidade")).toHaveValue("São Paulo");
+    await expect(page.getByLabel("UF")).toHaveValue("SP");
+    await page.getByLabel("Celular").fill("(11) 3456-7890");
     await page.getByRole("button", { name: "Cadastrar cliente" }).click();
     await expect(page.getByLabel("CNPJ")).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByText("CNPJ inválido")).toBeVisible();
+    await expect(page.getByLabel("Celular")).toHaveAttribute("aria-invalid", "true");
+    // Tudo o que foi digitado continua no formulário após o erro.
+    await expect(page.getByLabel("Celular")).toHaveValue("(11) 3456-7890");
+    await expect(page.getByLabel("Nome do responsável")).toHaveValue("Maria E2E");
+    await expect(page.getByLabel("Logradouro")).toHaveValue("Avenida Paulista");
+    await expect(page.getByLabel("UF")).toHaveValue("SP");
 
     await page.getByLabel("CNPJ").fill(cnpj);
+    await page.getByLabel("Celular").fill("(11) 98765-4321");
     await page.getByRole("button", { name: "Cadastrar cliente" }).click();
     await expect(page.getByTestId("senha-temporaria")).toContainText(
       "Senha temporária de João E2E",
     );
     await page.getByRole("link", { name: "Ver cliente" }).click();
 
-    await expect(page.getByRole("heading", { name: nome })).toBeVisible();
+    // O cliente leva o nome fantasia da empresa.
+    await expect(page.getByRole("heading", { name: fantasia })).toBeVisible();
     await expect(page.getByRole("cell", { name: cnpj })).toBeVisible();
+    await expect(
+      linhaDaEmpresa(page, fantasia).getByRole("cell", {
+        name: "Avenida Paulista, 1000 — São Paulo/SP · 01310-100",
+      }),
+    ).toBeVisible();
     await expect(page.getByText("João E2E")).toBeVisible();
-
-    // Nova empresa
-    const cnpj2 = gerarCnpj();
-    await page.getByRole("link", { name: "Nova empresa" }).click();
-    await page.getByLabel("CNPJ").fill(cnpj2);
-    await page.getByLabel("Razão social").fill("Filial E2E Ltda");
-    await page.getByLabel("Nome fantasia").fill("Filial E2E");
-    await page.getByRole("button", { name: "Adicionar empresa" }).click();
-    await expect(page.getByRole("cell", { name: "Filial E2E", exact: true })).toBeVisible();
-    await expect(page.getByRole("cell", { name: cnpj2 })).toBeVisible();
+    await expect(page.getByText("Maria E2E")).toBeVisible();
+    await expect(page.getByText("(11) 98765-4321")).toBeVisible();
 
     // Suspender e reativar
     await page.getByRole("button", { name: "Suspender cliente" }).click();
@@ -110,10 +158,95 @@ test.describe("clientes e empresas", () => {
     // Busca por CNPJ
     await menu(page).getByRole("link", { name: "Clientes" }).click();
     await expect(page).toHaveURL(/\/clientes$/);
-    await page.getByLabel("Buscar por nome ou CNPJ").fill(cnpj2);
+    await page.getByLabel("Buscar por nome ou CNPJ").fill(cnpj);
     // A busca é aplicada pela API e fica no endereço (spec web-layout).
     await expect(page).toHaveURL(/busca=/);
-    await expect(page.getByRole("link", { name: nome })).toBeVisible();
+    await expect(page.getByRole("link", { name: fantasia })).toBeVisible();
     await expect(page.getByRole("table", { name: "Clientes" }).getByRole("row")).toHaveCount(2);
+  });
+
+  test("altera o responsável; cliente antigo mostra que não há responsável", async ({ page }) => {
+    await entrarComoEquipe(page);
+    const fantasia = `Responsável E2E ${unico()}`;
+    await cadastrarCliente(page, fantasia);
+
+    await page.getByRole("link", { name: "Editar responsável" }).click();
+    await expect(page.getByRole("navigation", { name: /trilha/i })).toContainText("Responsável");
+    await expect(page.getByLabel("Celular")).toHaveValue("(11) 98765-4321");
+    await page.getByLabel("Celular").fill("(11) 3456-7890");
+    await page.getByRole("button", { name: "Salvar responsável" }).click();
+    await expect(page.getByLabel("Celular")).toHaveAttribute("aria-invalid", "true");
+    await page.getByLabel("Celular").fill("(21) 99876-5432");
+    await page.getByRole("button", { name: "Salvar responsável" }).click();
+    await expect(page.getByRole("heading", { name: fantasia })).toBeVisible();
+    await expect(page.getByText("(21) 99876-5432")).toBeVisible();
+
+    const antigo = await criarClienteSemResponsavel(`Cliente antigo ${unico()}`);
+    await page.goto(`/clientes/${antigo}`);
+    await expect(page.getByText("Responsável não cadastrado.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Cadastrar responsável" })).toBeVisible();
+  });
+
+  test("empresas: CEP não encontrado com endereço à mão, edição do endereço e empresa antiga", async ({
+    page,
+  }) => {
+    await entrarComoEquipe(page);
+    const clienteId = await cadastrarCliente(page, `Empresas E2E ${unico()}`);
+
+    // Serviço de CEP fora do ar e CEP desconhecido: aviso e preenchimento manual.
+    const filial = `Filial E2E ${unico()}`;
+    await page.getByRole("link", { name: "Nova empresa" }).click();
+    await page.getByLabel("CNPJ").fill(gerarCnpj());
+    await page.getByLabel("Razão social").fill(`${filial} Ltda`);
+    await page.getByLabel("Nome fantasia").fill(filial);
+    await page.getByLabel("CEP").fill("88888-888");
+    await expect(page.getByRole("status")).toHaveText(
+      "Não foi possível buscar o endereço. Preencha à mão.",
+    );
+    await page.getByLabel("CEP").fill("99999-999");
+    await expect(page.getByRole("status")).toHaveText("CEP não encontrado. Preencha o endereço.");
+    await page.getByLabel("Logradouro").fill("Rua Manual");
+    await page.getByLabel("Número").fill("50");
+    await page.getByLabel("Bairro").fill("Centro");
+    await page.getByLabel("Cidade").fill("Porto Alegre");
+    await page.getByLabel("UF").selectOption("RS");
+    await page.getByRole("button", { name: "Adicionar empresa" }).click();
+    await expect(
+      linhaDaEmpresa(page, filial).getByRole("cell", {
+        name: "Rua Manual, 50 — Porto Alegre/RS · 99999-999",
+      }),
+    ).toBeVisible();
+
+    // Edição do número, mantendo o resto do endereço.
+    await linhaDaEmpresa(page, filial).getByRole("link", { name: "Editar" }).click();
+    await expect(page.getByLabel("Logradouro")).toHaveValue("Rua Manual");
+    await page.getByLabel("Número").fill("50-A");
+    await page.getByRole("button", { name: "Salvar empresa" }).click();
+    await expect(
+      linhaDaEmpresa(page, filial).getByRole("cell", {
+        name: "Rua Manual, 50-A — Porto Alegre/RS · 99999-999",
+      }),
+    ).toBeVisible();
+
+    // Empresa cadastrada antes do endereço existir: só salva com o endereço completo.
+    const antiga = `Antiga E2E ${unico()}`;
+    await criarEmpresaSemEndereco(clienteId, antiga, gerarCnpj());
+    await page.reload();
+    await expect(
+      linhaDaEmpresa(page, antiga).getByRole("cell", { name: "Não cadastrado" }),
+    ).toBeVisible();
+    await linhaDaEmpresa(page, antiga).getByRole("link", { name: "Editar" }).click();
+    await expect(page.getByText("Endereço não cadastrado")).toBeVisible();
+    await page.getByRole("button", { name: "Salvar empresa" }).click();
+    await expect(page.getByLabel("CEP")).toHaveAttribute("aria-invalid", "true");
+    await page.getByLabel("CEP").fill("20040-002");
+    await expect(page.getByLabel("Logradouro")).toHaveValue("Rua da Assembleia");
+    await page.getByLabel("Número").fill("10");
+    await page.getByRole("button", { name: "Salvar empresa" }).click();
+    await expect(
+      linhaDaEmpresa(page, antiga).getByRole("cell", {
+        name: "Rua da Assembleia, 10 — Rio de Janeiro/RJ · 20040-002",
+      }),
+    ).toBeVisible();
   });
 });

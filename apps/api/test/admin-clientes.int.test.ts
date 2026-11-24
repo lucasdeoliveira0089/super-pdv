@@ -3,6 +3,16 @@ import { clienteCriadoResponseSchema, clienteSchema, empresaSchema } from "@supe
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type AppDeTeste, bearer, criarAppDeTeste, gerarCnpj } from "./app-de-teste";
 
+const ENDERECO = {
+  cep: "01310-100",
+  logradouro: "Avenida Paulista",
+  numero: "1000",
+  complemento: "",
+  bairro: "Bela Vista",
+  cidade: "São Paulo",
+  uf: "SP",
+};
+
 const mascara = (c: string) =>
   `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8, 12)}-${c.slice(12)}`;
 
@@ -10,13 +20,17 @@ describe("admin: clientes e empresas (integração)", () => {
   let t: AppDeTeste;
   let equipe: { accessToken: string };
 
+  const novaEmpresa = (sobrescrever: Record<string, unknown> = {}) => ({
+    cnpj: mascara(gerarCnpj()),
+    razaoSocial: "Mercado Silva Ltda",
+    nomeFantasia: "Mercado Silva",
+    endereco: ENDERECO,
+    ...sobrescrever,
+  });
+
   const novoCliente = (sobrescrever: Record<string, unknown> = {}) => ({
-    nome: "Grupo Silva",
-    empresa: {
-      cnpj: mascara(gerarCnpj()),
-      razaoSocial: "Mercado Silva Ltda",
-      nomeFantasia: "Mercado Silva",
-    },
+    empresa: novaEmpresa(),
+    responsavel: { nome: "Maria Silva", celular: "(11) 98765-4321", email: "maria@silva.com.br" },
     dono: {
       nome: "João Silva",
       email: `joao${Math.random().toString(36).slice(2, 8)}@silva.com.br`,
@@ -47,12 +61,26 @@ describe("admin: clientes e empresas (integração)", () => {
         .send(dados)
         .expect(201);
       const { cliente, senhaTemporaria } = clienteCriadoResponseSchema.parse(res.body);
-      expect(cliente).toMatchObject({ nome: "Grupo Silva", ativo: true });
+      // O nome do cliente vem do nome fantasia da primeira empresa.
+      expect(cliente).toMatchObject({
+        nome: "Mercado Silva",
+        ativo: true,
+        responsavel: { nome: "Maria Silva", celular: "11987654321", email: "maria@silva.com.br" },
+      });
       expect(cliente.empresas).toHaveLength(1);
       expect(cliente.empresas[0]).toMatchObject({
         nomeFantasia: "Mercado Silva",
         ativa: true,
         cnpj: dados.empresa.cnpj.replace(/\D/g, ""),
+        endereco: {
+          cep: "01310100",
+          logradouro: "Avenida Paulista",
+          numero: "1000",
+          complemento: null,
+          bairro: "Bela Vista",
+          cidade: "São Paulo",
+          uf: "SP",
+        },
       });
       expect(cliente.donos).toEqual([
         expect.objectContaining({ email: dados.dono.email, ativo: true }),
@@ -64,17 +92,62 @@ describe("admin: clientes e empresas (integração)", () => {
       expect(me).toMatchObject({ papel: "dono", senhaTemporaria: true });
     });
 
+    it("um nome do cliente enviado é ignorado", async () => {
+      const res = await t
+        .http()
+        .post("/v1/admin/clientes")
+        .set(bearer(equipe))
+        .send({ ...novoCliente(), nome: "Grupo Silva" })
+        .expect(201);
+      expect(clienteCriadoResponseSchema.parse(res.body).cliente.nome).toBe("Mercado Silva");
+    });
+
+    it("sem o celular do responsável: nada é criado e o erro aponta o campo", async () => {
+      const antes = await totalClientes();
+      const res = await t
+        .http()
+        .post("/v1/admin/clientes")
+        .set(bearer(equipe))
+        .send(novoCliente({ responsavel: { nome: "Maria", email: "maria@silva.com.br" } }))
+        .expect(400);
+      expect(res.body.fieldErrors["responsavel.celular"]).toBeDefined();
+      expect(await totalClientes()).toBe(antes);
+    });
+
+    it("sem o número do endereço: nada é criado e o erro aponta o campo", async () => {
+      const antes = await totalClientes();
+      const res = await t
+        .http()
+        .post("/v1/admin/clientes")
+        .set(bearer(equipe))
+        .send(novoCliente({ empresa: novaEmpresa({ endereco: { ...ENDERECO, numero: "" } }) }))
+        .expect(400);
+      expect(res.body.fieldErrors["empresa.endereco.numero"]).toEqual(["Informe o número"]);
+      expect(await totalClientes()).toBe(antes);
+    });
+
+    it("e-mail do responsável pode ser o de um usuário existente", async () => {
+      const outro = await t.criarCliente();
+      const usuario = await t.criarUsuario(outro, { papel: "dono" });
+      await t
+        .http()
+        .post("/v1/admin/clientes")
+        .set(bearer(equipe))
+        .send(
+          novoCliente({
+            responsavel: { nome: "Maria", celular: "11987654321", email: usuario.email },
+          }),
+        )
+        .expect(201);
+    });
+
     it("CNPJ inválido: nada é criado e o erro aponta o campo", async () => {
       const antes = await totalClientes();
       const res = await t
         .http()
         .post("/v1/admin/clientes")
         .set(bearer(equipe))
-        .send(
-          novoCliente({
-            empresa: { cnpj: "11.222.333/0001-82", razaoSocial: "X", nomeFantasia: "Y" },
-          }),
-        )
+        .send(novoCliente({ empresa: novaEmpresa({ cnpj: "11.222.333/0001-82" }) }))
         .expect(400);
       expect(res.body.fieldErrors["empresa.cnpj"]).toEqual(["CNPJ inválido"]);
       expect(await totalClientes()).toBe(antes);
@@ -131,7 +204,7 @@ describe("admin: clientes e empresas (integração)", () => {
     let donoSenha: string;
 
     beforeAll(async () => {
-      const dados = novoCliente({ nome: "Supermercado Beta" });
+      const dados = novoCliente({ empresa: novaEmpresa({ nomeFantasia: "Supermercado Beta" }) });
       cnpj = dados.empresa.cnpj;
       donoEmail = dados.dono.email;
       const r = clienteCriadoResponseSchema.parse(
@@ -167,12 +240,52 @@ describe("admin: clientes e empresas (integração)", () => {
       expect(nada).toEqual([]);
     });
 
-    it("detalhe do cliente traz empresas e Donos", async () => {
+    it("detalhe do cliente traz empresas, Donos e responsável", async () => {
       const c = clienteSchema.parse(
         (await t.http().get(`/v1/admin/clientes/${clienteId}`).set(bearer(equipe)).expect(200))
           .body,
       );
       expect(c.donos[0]!.email).toBe(donoEmail);
+      expect(c.responsavel?.celular).toBe("11987654321");
+    });
+
+    it("altera o responsável, que deve vir completo e válido", async () => {
+      const c = clienteSchema.parse(
+        (
+          await t
+            .http()
+            .patch(`/v1/admin/clientes/${clienteId}`)
+            .set(bearer(equipe))
+            .send({
+              responsavel: {
+                nome: "Maria Silva",
+                celular: "(21) 99876-5432",
+                email: "maria@silva.com.br",
+              },
+            })
+            .expect(200)
+        ).body,
+      );
+      expect(c.responsavel).toEqual({
+        nome: "Maria Silva",
+        celular: "21998765432",
+        email: "maria@silva.com.br",
+      });
+      const r = await t
+        .http()
+        .patch(`/v1/admin/clientes/${clienteId}`)
+        .set(bearer(equipe))
+        .send({ responsavel: { nome: "Maria", celular: "(11) 3456-7890", email: "m@x.com" } })
+        .expect(400);
+      expect(r.body.fieldErrors["responsavel.celular"]).toBeDefined();
+    });
+
+    it("cliente antigo vem sem responsável", async () => {
+      const antigo = await t.criarCliente();
+      const c = clienteSchema.parse(
+        (await t.http().get(`/v1/admin/clientes/${antigo}`).set(bearer(equipe)).expect(200)).body,
+      );
+      expect(c.responsavel).toBeNull();
     });
 
     it("suspender derruba login e tokens já emitidos; reativar libera", async () => {
@@ -252,17 +365,89 @@ describe("admin: clientes e empresas (integração)", () => {
         .http()
         .post(`/v1/admin/clientes/${clienteId}/empresas`)
         .set(bearer(equipe))
-        .send({
-          cnpj: "12.ABC.345/01DE-35",
-          razaoSocial: "Filial Ltda",
-          nomeFantasia: "Mercado Silva Filial",
-        })
+        .send(
+          novaEmpresa({
+            cnpj: "12.ABC.345/01DE-35",
+            razaoSocial: "Filial Ltda",
+            nomeFantasia: "Mercado Silva Filial",
+          }),
+        )
         .expect(201);
       expect(empresaSchema.parse(res.body)).toMatchObject({
         cnpj: "12ABC34501DE35",
         ativa: true,
         clienteId,
+        endereco: expect.objectContaining({ cep: "01310100", uf: "SP" }),
       });
+    });
+
+    it("nova empresa sem número no endereço → 400 e nada é criado", async () => {
+      const cnpj = gerarCnpj();
+      const r = await t
+        .http()
+        .post(`/v1/admin/clientes/${clienteId}/empresas`)
+        .set(bearer(equipe))
+        .send(novaEmpresa({ cnpj, endereco: { ...ENDERECO, numero: "" } }))
+        .expect(400);
+      expect(r.body.fieldErrors["endereco.numero"]).toEqual(["Informe o número"]);
+      const linhas = await t.system.db
+        .select()
+        .from(schema.empresas)
+        .where(eq(schema.empresas.cnpj, cnpj));
+      expect(linhas).toEqual([]);
+    });
+
+    it("altera o endereço mantendo os demais campos", async () => {
+      const empresa = (
+        await t
+          .http()
+          .post(`/v1/admin/clientes/${clienteId}/empresas`)
+          .set(bearer(equipe))
+          .send(novaEmpresa())
+          .expect(201)
+      ).body;
+      const atualizada = empresaSchema.parse(
+        (
+          await t
+            .http()
+            .patch(`/v1/admin/empresas/${empresa.id}`)
+            .set(bearer(equipe))
+            .send({ endereco: { ...ENDERECO, numero: "120-A", complemento: "Sala 2" } })
+            .expect(200)
+        ).body,
+      );
+      expect(atualizada).toMatchObject({ razaoSocial: "Mercado Silva Ltda", ativa: true });
+      expect(atualizada.endereco).toMatchObject({
+        numero: "120-A",
+        complemento: "Sala 2",
+        logradouro: "Avenida Paulista",
+      });
+    });
+
+    it("empresa antiga sem endereço: inativa sem endereço e completa ao editar", async () => {
+      const antiga = await t.criarEmpresa(clienteId);
+      const inativada = empresaSchema.parse(
+        (
+          await t
+            .http()
+            .patch(`/v1/admin/empresas/${antiga}`)
+            .set(bearer(equipe))
+            .send({ ativa: false })
+            .expect(200)
+        ).body,
+      );
+      expect(inativada).toMatchObject({ ativa: false, endereco: null });
+      const completada = empresaSchema.parse(
+        (
+          await t
+            .http()
+            .patch(`/v1/admin/empresas/${antiga}`)
+            .set(bearer(equipe))
+            .send({ endereco: ENDERECO })
+            .expect(200)
+        ).body,
+      );
+      expect(completada.endereco?.cep).toBe("01310100");
     });
 
     it("CNPJ de empresa de outro cliente → 409", async () => {
@@ -273,7 +458,7 @@ describe("admin: clientes e empresas (integração)", () => {
         .http()
         .post(`/v1/admin/clientes/${clienteId}/empresas`)
         .set(bearer(equipe))
-        .send({ cnpj, razaoSocial: "X", nomeFantasia: "Y" })
+        .send(novaEmpresa({ cnpj }))
         .expect(409);
       expect(r.body.fieldErrors.cnpj).toEqual(["CNPJ já cadastrado"]);
     });
@@ -285,7 +470,7 @@ describe("admin: clientes e empresas (integração)", () => {
           .http()
           .post(`/v1/admin/clientes/${clienteId}/empresas`)
           .set(bearer(equipe))
-          .send({ cnpj, razaoSocial: "Antiga", nomeFantasia: "Antiga" })
+          .send(novaEmpresa({ cnpj, razaoSocial: "Antiga", nomeFantasia: "Antiga" }))
           .expect(201)
       ).body;
       await t
@@ -315,7 +500,7 @@ describe("admin: clientes e empresas (integração)", () => {
         .http()
         .post(`/v1/admin/clientes/0190a4b2-7c3d-7e8f-9a0b-1c2d3e4f5a6b/empresas`)
         .set(bearer(equipe))
-        .send({ cnpj: gerarCnpj(), razaoSocial: "X", nomeFantasia: "Y" })
+        .send(novaEmpresa())
         .expect(404);
     });
   });

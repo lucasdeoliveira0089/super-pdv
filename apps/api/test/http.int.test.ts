@@ -1,6 +1,6 @@
 import { Body, Controller, type INestApplication, Post } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { apiErroSchema, empresaCriarSchema, type EmpresaCriar } from "@super-pdv/shared";
+import { apiErroSchema, empresaCriarSchema } from "@super-pdv/shared";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { configurarApp } from "../src/app.setup";
@@ -8,11 +8,14 @@ import { Publico } from "../src/auth/decoradores";
 import { ZodPipe } from "../src/comum/zod.pipe";
 import { aplicarAmbienteDeTeste } from "./ambiente";
 
+// Só os campos simples da empresa: basta para exercitar o pipe de validação.
+const ecoSchema = empresaCriarSchema.omit({ endereco: true });
+
 @Controller("eco")
 @Publico()
 class EcoController {
   @Post()
-  eco(@Body(new ZodPipe(empresaCriarSchema)) corpo: EmpresaCriar) {
+  eco(@Body(new ZodPipe(ecoSchema)) corpo: unknown) {
     return corpo;
   }
 

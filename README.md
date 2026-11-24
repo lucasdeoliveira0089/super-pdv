@@ -79,6 +79,8 @@ Credenciais criadas pelo `pnpm db:seed` (somente desenvolvimento):
 
 Todos os usuários do cliente entram também no PDV: o Operador e o Gerente veem só a Mercado Demo Centro (escolhida automaticamente); o Dono e o Administrador escolhem entre as duas empresas.
 
+O cliente de demonstração também tem um responsável (`responsavel@demo.local`, só contato, sem login) e as duas empresas têm endereço. O seed não altera dados que já existem: num banco criado antes, o cliente e as empresas de demonstração aparecem no admin como "não cadastrado" até serem editados.
+
 O comando é idempotente e recusa rodar com `NODE_ENV=production`.
 
 ## Banco de dados e e-mail locais
@@ -156,6 +158,23 @@ pnpm --filter @super-pdv/gestor test:e2e # Playwright contra o build de produç�
 ```
 
 Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`.
+
+### Cadastro de cliente no admin
+
+"Novo cliente" pede a primeira empresa (CNPJ, razão social e nome fantasia, que também vira o nome do cliente), o endereço da empresa, o responsável e o Dono (specs `client-provisioning` e `organization-structure`):
+
+- **Endereço**: obrigatório, menos o complemento. Ao digitar o CEP, o admin consulta `GET /api/cep/<cep>` (rota do próprio admin, que chama o serviço de `CEP_API_URL`) e preenche logradouro, bairro, cidade e UF. Se o CEP não for encontrado ou o serviço falhar, a equipe preenche à mão. O mesmo vale para "Nova empresa" e para a edição da empresa.
+- **Responsável**: nome, celular (com DDD e o 9) e e-mail de contato do cliente. Não é usuário: não entra no gestor nem no PDV. Aparece e é editado no detalhe do cliente.
+- **Dono**: nome e e-mail; recebe a senha temporária, exibida uma única vez.
+
+Clientes e empresas cadastrados antes do endereço e do responsável existirem aparecem como "não cadastrado" no detalhe; ao editar uma empresa, o endereço completo passa a ser exigido.
+
+Variáveis (copie `apps/<app>/.env.example` para `apps/<app>/.env.local`):
+
+| Variável      | App            | Obrigatória | Descrição                                                                                                       |
+| ------------- | -------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `API_URL`     | admin e gestor | sim         | URL da API, usada só no servidor do Next                                                                        |
+| `CEP_API_URL` | admin          | não         | Serviço de busca de endereço pelo CEP (padrão `https://viacep.com.br/ws`); os E2E apontam para um serviço falso |
 
 ### Layout
 

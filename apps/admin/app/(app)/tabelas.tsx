@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type Cliente, formatarCnpj, type MembroEquipe } from "@super-pdv/shared";
+import { type Cliente, formatarCep, formatarCnpj, type MembroEquipe } from "@super-pdv/shared";
 import { Badge } from "@super-pdv/ui/components/badge";
 import { colunasDe, DataTable } from "@super-pdv/ui/components/data-table";
 import { BarraFiltros } from "@super-pdv/web-session/telas";
@@ -121,6 +121,13 @@ export function TabelaEquipe({ membros, euId }: { membros: MembroEquipe[]; euId:
 // ------------------------------------------------------- empresas do cliente
 
 type EmpresaDoCliente = Cliente["empresas"][number];
+
+/** Ex.: "Avenida Paulista, 1000 — São Paulo/SP · 01310-100". */
+function resumoDoEndereco(e: EmpresaDoCliente["endereco"]): string | null {
+  if (!e) return null;
+  const complemento = e.complemento ? ` (${e.complemento})` : "";
+  return `${e.logradouro}, ${e.numero}${complemento} — ${e.cidade}/${e.uf} · ${formatarCep(e.cep)}`;
+}
 const cm = colunasDe<EmpresaDoCliente>();
 
 export function TabelaEmpresasDoCliente({
@@ -138,6 +145,12 @@ export function TabelaEmpresasDoCliente({
     }),
     cm.accessor("cnpj", { header: "CNPJ", cell: (i) => formatarCnpj(i.getValue()) }),
     cm.accessor("razaoSocial", { header: "Razão social" }),
+    cm.accessor((e) => resumoDoEndereco(e.endereco), {
+      id: "endereco",
+      header: "Endereço",
+      enableSorting: false,
+      cell: (i) => i.getValue() ?? <span className="text-muted-foreground">Não cadastrado</span>,
+    }),
     cm.accessor("ativa", {
       header: "Situação",
       cell: ({ row }) => situacao(row.original.ativa, "Ativa", "Inativa"),
@@ -168,6 +181,7 @@ export function TabelaEmpresasDoCliente({
         nomeFantasia: "Nome fantasia",
         cnpj: "CNPJ",
         razaoSocial: "Razão social",
+        endereco: "Endereço",
         ativa: "Situação",
       }}
       ordenacaoInicial={[{ id: "nomeFantasia", desc: false }]}

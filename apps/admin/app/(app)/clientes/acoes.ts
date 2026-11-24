@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  clienteAtualizarSchema,
   clienteCriadoResponseSchema,
   clienteCriarSchema,
   empresaAtualizarSchema,
@@ -20,11 +21,45 @@ const erro = (e: unknown, valores?: Record<string, string>) => {
   return r.ok ? null : { mensagem: r.mensagem, campos: r.campos, valores };
 };
 
+/** Nomes dos campos de endereço no FormData (componente `CamposEndereco`). */
+const CAMPOS_ENDERECO = [
+  "cep",
+  "logradouro",
+  "numero",
+  "complemento",
+  "bairro",
+  "cidade",
+  "uf",
+] as const;
+
+const enderecoDo = (v: Record<string, string>) =>
+  Object.fromEntries(CAMPOS_ENDERECO.map((c) => [c, v[c]]));
+
 export async function criarCliente(_: EstadoComSenha, fd: FormData): Promise<EstadoComSenha> {
-  const v = textos(fd, "nome", "cnpj", "razaoSocial", "nomeFantasia", "donoNome", "donoEmail");
+  const v = textos(
+    fd,
+    "cnpj",
+    "razaoSocial",
+    "nomeFantasia",
+    ...CAMPOS_ENDERECO,
+    "responsavelNome",
+    "responsavelCelular",
+    "responsavelEmail",
+    "donoNome",
+    "donoEmail",
+  );
   const dados = clienteCriarSchema.safeParse({
-    nome: v.nome,
-    empresa: { cnpj: v.cnpj, razaoSocial: v.razaoSocial, nomeFantasia: v.nomeFantasia },
+    empresa: {
+      cnpj: v.cnpj,
+      razaoSocial: v.razaoSocial,
+      nomeFantasia: v.nomeFantasia,
+      endereco: enderecoDo(v),
+    },
+    responsavel: {
+      nome: v.responsavelNome,
+      celular: v.responsavelCelular,
+      email: v.responsavelEmail,
+    },
     dono: { nome: v.donoNome, email: v.donoEmail },
   });
   if (!dados.success) return { campos: errosDoZod(dados.error), valores: v };
@@ -50,12 +85,37 @@ export async function alterarSituacaoCliente(fd: FormData): Promise<void> {
   revalidatePath(`/clientes/${id}`);
 }
 
+export async function atualizarResponsavel(
+  _: EstadoFormulario,
+  fd: FormData,
+): Promise<EstadoFormulario> {
+  const v = textos(fd, "clienteId", "nome", "celular", "email");
+  const dados = clienteAtualizarSchema.safeParse({
+    responsavel: { nome: v.nome, celular: v.celular, email: v.email },
+  });
+  if (!dados.success) return { campos: errosDoZod(dados.error), valores: v };
+  try {
+    await (
+      await api()
+    ).requisitar("PATCH", `/v1/admin/clientes/${v.clienteId}`, { corpo: dados.data });
+  } catch (e) {
+    return erro(e, v);
+  }
+  revalidatePath(`/clientes/${v.clienteId}`);
+  redirect(`/clientes/${v.clienteId}`);
+}
+
 export async function adicionarEmpresa(
   _: EstadoFormulario,
   fd: FormData,
 ): Promise<EstadoFormulario> {
-  const v = textos(fd, "clienteId", "cnpj", "razaoSocial", "nomeFantasia");
-  const dados = empresaCriarSchema.safeParse(v);
+  const v = textos(fd, "clienteId", "cnpj", "razaoSocial", "nomeFantasia", ...CAMPOS_ENDERECO);
+  const dados = empresaCriarSchema.safeParse({
+    cnpj: v.cnpj,
+    razaoSocial: v.razaoSocial,
+    nomeFantasia: v.nomeFantasia,
+    endereco: enderecoDo(v),
+  });
   if (!dados.success) return { campos: errosDoZod(dados.error), valores: v };
   try {
     await (
@@ -68,14 +128,24 @@ export async function adicionarEmpresa(
   redirect(`/clientes/${v.clienteId}`);
 }
 
+/** A edição sempre envia o endereço completo: empresas antigas o completam ao salvar. */
 export async function atualizarEmpresa(
   _: EstadoFormulario,
   fd: FormData,
 ): Promise<EstadoFormulario> {
-  const v = textos(fd, "clienteId", "empresaId", "razaoSocial", "nomeFantasia", "ativa");
+  const v = textos(
+    fd,
+    "clienteId",
+    "empresaId",
+    "razaoSocial",
+    "nomeFantasia",
+    "ativa",
+    ...CAMPOS_ENDERECO,
+  );
   const dados = empresaAtualizarSchema.safeParse({
     razaoSocial: v.razaoSocial,
     nomeFantasia: v.nomeFantasia,
+    endereco: enderecoDo(v),
     ativa: v.ativa === "true",
   });
   if (!dados.success) return { campos: errosDoZod(dados.error), valores: v };

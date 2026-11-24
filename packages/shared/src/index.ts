@@ -6,4 +6,6 @@ export * from "./contratos/auth";
 export * from "./contratos/empresas";
 export * from "./contratos/erro";
 export * from "./contratos/usuarios";
+export * from "./endereco/endereco";
 export * from "./health/health";
+export * from "./telefone/celular";

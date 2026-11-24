@@ -16,6 +16,7 @@ const ROTULOS_FIXOS: Record<string, string> = {
   novo: "Novo",
   nova: "Nova",
   editar: "Editar",
+  responsavel: "Responsável",
   "acesso-negado": "Acesso negado",
 };
 

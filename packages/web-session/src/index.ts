@@ -20,3 +20,10 @@ export {
 } from "./formularios";
 export { carregar } from "./navegacao";
 export { COOKIE_MENU } from "./constantes";
+export {
+  CEP_API_URL_PADRAO,
+  consultarCep,
+  type EnderecoDoCep,
+  type OpcoesConsultaCep,
+  type ResultadoCep,
+} from "./cep";

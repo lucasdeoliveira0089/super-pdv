@@ -32,6 +32,14 @@ describe("trilha de navegação", () => {
     ]);
   });
 
+  it("responsável do cliente", () => {
+    expect(etapasDoCaminho(`/clientes/${ID}/responsavel`, itens)).toEqual([
+      { rotulo: "Clientes", href: "/clientes" },
+      { rotulo: "Detalhes", href: `/clientes/${ID}` },
+      { rotulo: "Responsável" },
+    ]);
+  });
+
   it("empresas do cliente: o segmento intermediário não vira etapa", () => {
     expect(etapasDoCaminho(`/clientes/${ID}/empresas/nova`, itens)).toEqual([
       { rotulo: "Clientes", href: "/clientes" },
