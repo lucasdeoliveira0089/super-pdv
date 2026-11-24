@@ -1,9 +1,10 @@
 import { expect, type Page, test } from "@playwright/test";
+import { URL_API } from "./portas";
 import { DEMO, entrar, SENHA_DEMO, sair, unico } from "./util";
 
 // Cenários da spec `web-layout` (estrutura visual comum do admin e do gestor).
 
-const API = process.env.API_URL ?? "http://localhost:3333";
+const API = URL_API;
 
 /** Garante ao menos `minimo` usuários no cliente de demonstração (cria pela API). */
 async function garantirUsuarios(minimo: number): Promise<void> {

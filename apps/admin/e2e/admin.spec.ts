@@ -86,7 +86,7 @@ test.describe("equipe", () => {
 });
 
 test.describe("clientes e empresas", () => {
-  /** Preenche a empresa, o responsável e o Dono do formulário "Novo cliente" (sem enviar). */
+  /** Preenche a empresa, a localização e o responsável do formulário "Novo cliente" (sem enviar). */
   async function preencherNovoCliente(page: Page, fantasia: string, cnpj = gerarCnpj()) {
     await page.getByLabel("CNPJ").fill(cnpj);
     await page.getByLabel("Razão social").fill(`${fantasia} Ltda`);
@@ -99,8 +99,6 @@ test.describe("clientes e empresas", () => {
     await page.getByLabel("Nome do responsável").fill("Maria E2E");
     await page.getByLabel("Celular").fill("11987654321");
     await page.getByLabel("E-mail do responsável").fill(`maria.${unico()}@e2e.local`);
-    await page.getByLabel("Nome do Dono").fill("João E2E");
-    await page.getByLabel("E-mail do Dono").fill(`dono.${unico()}@e2e.local`);
   }
 
   /** Cadastra um cliente pelo admin e abre o detalhe; devolve o id do cliente. */
@@ -108,7 +106,7 @@ test.describe("clientes e empresas", () => {
     await page.goto("/clientes/novo");
     await preencherNovoCliente(page, fantasia);
     await page.getByRole("button", { name: "Cadastrar cliente" }).click();
-    await page.getByRole("link", { name: "Ver cliente" }).click();
+    // Após o cadastro, o admin abre o detalhe do cliente.
     await expect(page.getByRole("heading", { name: fantasia })).toBeVisible();
     return new URL(page.url()).pathname.split("/")[2]!;
   }
@@ -119,7 +117,7 @@ test.describe("clientes e empresas", () => {
       .getByRole("row")
       .filter({ has: page.getByRole("cell", { name: fantasia, exact: true }) });
 
-  test("cadastra cliente com empresa, endereço pelo CEP, responsável e Dono; suspende e reativa", async ({
+  test("cadastra cliente com empresa, endereço pelo CEP e responsável; Dono no detalhe; suspende e reativa", async ({
     page,
   }) => {
     const fantasia = `Mercado E2E ${unico()}`;
@@ -133,8 +131,8 @@ test.describe("clientes e empresas", () => {
       "Empresa",
       "Localização",
       "Responsável",
-      "Dono",
     ]);
+    await expect(page.getByLabel("Nome do Dono")).toHaveCount(0);
     const localizacao = page.getByRole("region", { name: "Localização" });
     await expect(localizacao.getByLabel("CEP")).toHaveAttribute("aria-required", "true");
     await expect(localizacao.getByLabel("Complemento")).not.toHaveAttribute("aria-required");
@@ -162,22 +160,37 @@ test.describe("clientes e empresas", () => {
     await page.getByLabel("Número").fill("1000");
     await page.getByLabel("Celular").fill("(11) 98765-4321");
     await page.getByRole("button", { name: "Cadastrar cliente" }).click();
-    await expect(page.getByTestId("senha-temporaria")).toContainText(
-      "Senha temporária de João E2E",
-    );
-    await page.getByRole("link", { name: "Ver cliente" }).click();
 
-    // O cliente leva o nome fantasia da empresa.
+    // Abre o detalhe; o cliente leva o nome fantasia da empresa e ainda não tem Dono.
     await expect(page.getByRole("heading", { name: fantasia })).toBeVisible();
+    await expect(page.getByText(/^Nenhum Dono cadastrado/)).toBeVisible();
     await expect(page.getByRole("cell", { name: cnpj })).toBeVisible();
     await expect(
       linhaDaEmpresa(page, fantasia).getByRole("cell", {
         name: "Avenida Paulista, 1000 — São Paulo/SP · 01310-100",
       }),
     ).toBeVisible();
-    await expect(page.getByText("João E2E")).toBeVisible();
     await expect(page.getByText("Maria E2E")).toBeVisible();
     await expect(page.getByText("(11) 98765-4321")).toBeVisible();
+
+    // Cadastro do Dono no detalhe: e-mail repetido recusado junto ao campo; depois, a senha.
+    await page.getByRole("link", { name: "Cadastrar Dono" }).click();
+    await page.getByLabel("Nome do Dono").fill("João E2E");
+    await page.getByLabel("E-mail do Dono").fill(DONO_DEMO.email);
+    await page.getByRole("button", { name: "Cadastrar Dono" }).click();
+    await expect(page.getByLabel("E-mail do Dono")).toHaveAttribute("aria-invalid", "true");
+    // Junto ao campo (o alerta do topo repete a mensagem).
+    await expect(
+      page.locator("[data-slot=field-error]", { hasText: "E-mail já está em uso" }),
+    ).toBeVisible();
+    await page.getByLabel("E-mail do Dono").fill(`dono.${unico()}@e2e.local`);
+    await page.getByRole("button", { name: "Cadastrar Dono" }).click();
+    await expect(page.getByTestId("senha-temporaria")).toContainText(
+      "Senha temporária de João E2E",
+    );
+    await page.getByRole("link", { name: "Voltar ao cliente" }).click();
+    await expect(page.getByRole("listitem").filter({ hasText: "João E2E" })).toBeVisible();
+    await expect(page.getByText(/^Nenhum Dono cadastrado/)).toHaveCount(0);
 
     // Suspender e reativar
     await page.getByRole("button", { name: "Suspender cliente" }).click();

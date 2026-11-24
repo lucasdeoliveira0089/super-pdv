@@ -157,15 +157,20 @@ pnpm --filter @super-pdv/gestor build
 pnpm --filter @super-pdv/gestor test:e2e # Playwright contra o build de produção
 ```
 
-Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`. Os E2E do admin sobem o admin na porta 3101 (com um serviço de CEP falso na 3901), para não reaproveitar o admin de desenvolvimento da 3001.
+Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`. Os E2E usam portas próprias, para nunca reaproveitar os servidores de desenvolvimento (que podem estar desatualizados ou sem a configuração dos testes):
+
+| E2E    | App  | API  | Outros                    |
+| ------ | ---- | ---- | ------------------------- |
+| admin  | 3101 | 3433 | serviço de CEP falso 3901 |
+| gestor | 3100 | 3434 | —                         |
 
 ### Cadastro de cliente no admin
 
-"Novo cliente" pede a primeira empresa (CNPJ, razão social e nome fantasia, que também vira o nome do cliente), o endereço da empresa, o responsável e o Dono (specs `client-provisioning` e `organization-structure`):
+"Novo cliente" pede, em cartões, a primeira empresa (CNPJ, razão social e nome fantasia, que também vira o nome do cliente), a localização (endereço da empresa) e o responsável (specs `client-provisioning`, `organization-structure` e `web-layout`). O cadastro **não cria usuários**: depois de salvar, o admin abre o detalhe do cliente, onde a equipe cadastra o Dono.
 
 - **Endereço**: obrigatório, menos o complemento. Ao digitar o CEP, o admin consulta `GET /api/cep/<cep>` (rota do próprio admin, que chama o serviço de `CEP_API_URL`) e preenche logradouro, bairro, cidade e UF. Se o CEP não for encontrado ou o serviço falhar, a equipe preenche à mão. O mesmo vale para "Nova empresa" e para a edição da empresa.
 - **Responsável**: nome, celular (com DDD e o 9) e e-mail de contato do cliente. Não é usuário: não entra no gestor nem no PDV. Aparece e é editado no detalhe do cliente.
-- **Dono**: nome e e-mail; recebe a senha temporária, exibida uma única vez.
+- **Dono**: cadastrado no detalhe do cliente ("Cadastrar Dono", com nome e e-mail); recebe a senha temporária, exibida uma única vez. Um cliente pode ter mais de um Dono, e sem nenhum ninguém do cliente acessa o gestor e o PDV.
 
 Clientes e empresas cadastrados antes do endereço e do responsável existirem aparecem como "não cadastrado" no detalhe; ao editar uma empresa, o endereço completo passa a ser exigido.
 

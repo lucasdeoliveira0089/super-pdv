@@ -38,22 +38,30 @@ export const clienteSchema = z.object({
 });
 export type Cliente = z.infer<typeof clienteSchema>;
 
-/** O nome do cliente não é informado: vem do nome fantasia da primeira empresa. */
+/**
+ * Cadastro de cliente: primeira empresa e responsável. O nome do cliente vem do
+ * nome fantasia da empresa, e nenhum usuário é criado (o Dono é cadastrado depois).
+ * A resposta é o próprio `Cliente`.
+ */
 export const clienteCriarSchema = z.object({
   empresa: empresaCriarSchema,
   responsavel: responsavelEntradaSchema,
-  dono: z.object({
-    nome: textoObrigatorio("o nome do Dono", 120),
-    email: emailSchema,
-  }),
 });
 export type ClienteCriar = z.infer<typeof clienteCriarSchema>;
 
-export const clienteCriadoResponseSchema = z.object({
-  cliente: clienteSchema,
+/** Cadastro de um usuário Dono no detalhe do cliente. */
+export const donoCriarSchema = z.object({
+  nome: textoObrigatorio("o nome do Dono", 120),
+  email: emailSchema,
+});
+export type DonoCriar = z.infer<typeof donoCriarSchema>;
+
+export const donoCriadoResponseSchema = z.object({
+  dono: donoResumoSchema,
+  /** Exibida uma única vez à equipe. */
   senhaTemporaria: z.string(),
 });
-export type ClienteCriadoResponse = z.infer<typeof clienteCriadoResponseSchema>;
+export type DonoCriadoResponse = z.infer<typeof donoCriadoResponseSchema>;
 
 export const clienteAtualizarSchema = z
   .object({

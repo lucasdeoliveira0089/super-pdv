@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validarSenha } from "../auth/senha";
-import { clienteAtualizarSchema, clienteCriarSchema } from "./admin";
+import { clienteAtualizarSchema, clienteCriarSchema, donoCriarSchema } from "./admin";
 import { loginRequestSchema, trocarSenhaRequestSchema } from "./auth";
 import { empresaAtualizarSchema, empresaCriarSchema } from "./empresas";
 import { usuarioAtualizarSchema, usuarioCriarSchema, usuarioFiltrosSchema } from "./usuarios";
@@ -25,7 +25,6 @@ const EMPRESA = {
 const CLIENTE = {
   empresa: EMPRESA,
   responsavel: { nome: "Maria", celular: "(11) 98765-4321", email: "maria@silva.com.br" },
-  dono: { nome: "João", email: "joao@silva.com.br" },
 };
 
 /** Caminho do primeiro erro, ou `null` quando os dados são aceitos. */
@@ -137,6 +136,17 @@ describe("clientes", () => {
     const r = clienteCriarSchema.parse(CLIENTE);
     expect(r).not.toHaveProperty("nome");
     expect(r.responsavel.celular).toBe("11987654321");
+  });
+  it("cadastro de Dono normaliza o e-mail e exige o nome", () => {
+    expect(donoCriarSchema.parse({ nome: "João", email: " Joao@Silva.com.br " }).email).toBe(
+      "joao@silva.com.br",
+    );
+    expect(donoCriarSchema.safeParse({ nome: "", email: "joao@silva.com.br" }).success).toBe(false);
+  });
+  it("o cadastro de cliente ignora um Dono enviado", () => {
+    expect(clienteCriarSchema.parse({ ...CLIENTE, dono: { nome: "João" } })).not.toHaveProperty(
+      "dono",
+    );
   });
   it("ignora um nome do cliente enviado", () => {
     expect(clienteCriarSchema.parse({ ...CLIENTE, nome: "Grupo Silva" })).not.toHaveProperty(

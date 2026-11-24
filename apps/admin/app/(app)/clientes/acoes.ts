@@ -2,8 +2,10 @@
 
 import {
   clienteAtualizarSchema,
-  clienteCriadoResponseSchema,
   clienteCriarSchema,
+  clienteSchema,
+  donoCriadoResponseSchema,
+  donoCriarSchema,
   empresaAtualizarSchema,
   empresaCriarSchema,
   senhaTemporariaResponseSchema,
@@ -35,7 +37,8 @@ const CAMPOS_ENDERECO = [
 const enderecoDo = (v: Record<string, string>) =>
   Object.fromEntries(CAMPOS_ENDERECO.map((c) => [c, v[c]]));
 
-export async function criarCliente(_: EstadoComSenha, fd: FormData): Promise<EstadoComSenha> {
+/** Cadastra cliente e empresa (sem usuários) e abre o detalhe do cliente. */
+export async function criarCliente(_: EstadoFormulario, fd: FormData): Promise<EstadoFormulario> {
   const v = textos(
     fd,
     "cnpj",
@@ -45,8 +48,6 @@ export async function criarCliente(_: EstadoComSenha, fd: FormData): Promise<Est
     "responsavelNome",
     "responsavelCelular",
     "responsavelEmail",
-    "donoNome",
-    "donoEmail",
   );
   const dados = clienteCriarSchema.safeParse({
     empresa: {
@@ -60,18 +61,35 @@ export async function criarCliente(_: EstadoComSenha, fd: FormData): Promise<Est
       celular: v.responsavelCelular,
       email: v.responsavelEmail,
     },
-    dono: { nome: v.donoNome, email: v.donoEmail },
   });
+  if (!dados.success) return { campos: errosDoZod(dados.error), valores: v };
+  let id: string;
+  try {
+    const cliente = await (
+      await api()
+    ).requisitar("POST", "/v1/admin/clientes", { corpo: dados.data, schema: clienteSchema });
+    id = cliente.id;
+  } catch (e) {
+    return erro(e, v);
+  }
+  revalidatePath("/clientes");
+  redirect(`/clientes/${id}`);
+}
+
+/** Cadastra um Dono no detalhe do cliente; a senha temporária é exibida uma única vez. */
+export async function cadastrarDono(_: EstadoComSenha, fd: FormData): Promise<EstadoComSenha> {
+  const v = textos(fd, "clienteId", "nome", "email");
+  const dados = donoCriarSchema.safeParse({ nome: v.nome, email: v.email });
   if (!dados.success) return { campos: errosDoZod(dados.error), valores: v };
   try {
     const r = await (
       await api()
-    ).requisitar("POST", "/v1/admin/clientes", {
+    ).requisitar("POST", `/v1/admin/clientes/${v.clienteId}/donos`, {
       corpo: dados.data,
-      schema: clienteCriadoResponseSchema,
+      schema: donoCriadoResponseSchema,
     });
-    revalidatePath("/clientes");
-    return { senhaTemporaria: r.senhaTemporaria, para: dados.data.dono.nome, id: r.cliente.id };
+    revalidatePath(`/clientes/${v.clienteId}`);
+    return { senhaTemporaria: r.senhaTemporaria, para: r.dono.nome, id: v.clienteId };
   } catch (e) {
     return erro(e, v);
   }

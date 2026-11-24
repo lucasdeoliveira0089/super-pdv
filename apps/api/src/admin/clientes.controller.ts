@@ -13,7 +13,6 @@ import {
   type Cliente,
   clienteAtualizarSchema,
   type ClienteAtualizar,
-  type ClienteCriadoResponse,
   clienteCriarSchema,
   type ClienteCriar,
   clienteFiltrosSchema,
@@ -23,6 +22,9 @@ import {
   type EmpresaAtualizar,
   empresaCriarSchema,
   type EmpresaCriar,
+  type DonoCriadoResponse,
+  donoCriarSchema,
+  type DonoCriar,
   type SenhaTemporariaResponse,
 } from "@super-pdv/shared";
 import { DominioEquipe } from "../auth/decoradores";
@@ -40,10 +42,16 @@ export class ClientesAdminController {
   }
 
   @Post()
-  criar(
-    @Body(new ZodPipe(clienteCriarSchema)) corpo: ClienteCriar,
-  ): Promise<ClienteCriadoResponse> {
+  criar(@Body(new ZodPipe(clienteCriarSchema)) corpo: ClienteCriar): Promise<Cliente> {
     return this.clientes.criar(corpo);
+  }
+
+  @Post(":id/donos")
+  adicionarDono(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodPipe(donoCriarSchema)) corpo: DonoCriar,
+  ): Promise<DonoCriadoResponse> {
+    return this.clientes.adicionarDono(id, corpo);
   }
 
   @Get(":id")

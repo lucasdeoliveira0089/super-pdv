@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { URL_GESTOR } from "./portas";
 import {
   cadastrarUsuario,
   DEMO,
@@ -108,7 +109,7 @@ test.describe("usuários", () => {
     await page.getByRole("button", { name: "Desativar" }).click();
     await expect(page.getByText("Inativo", { exact: true })).toBeVisible();
 
-    const outra = await browser.newPage({ baseURL: "http://localhost:3000" });
+    const outra = await browser.newPage({ baseURL: URL_GESTOR });
     await tentarEntrar(outra, email, "Qualquer#Senha1");
     await expect(outra.getByRole("alert").first()).toHaveText("E-mail ou senha inválidos");
     await outra.close();
@@ -152,7 +153,7 @@ test.describe("recuperação de senha", () => {
     await expect(page.getByText("Verifique o seu e-mail")).toBeVisible();
 
     const texto = await ultimoEmail(email);
-    const link = /(http:\/\/localhost:3000\/redefinir-senha\?token=\S+)/.exec(texto)?.[1];
+    const link = new RegExp(`(${URL_GESTOR}/redefinir-senha\\?token=\\S+)`).exec(texto)?.[1];
     expect(link).toBeTruthy();
     await page.goto(link!);
     await page.getByLabel("Nova senha", { exact: true }).fill("Recuperada#2026");

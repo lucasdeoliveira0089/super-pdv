@@ -71,7 +71,17 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
       </section>
 
       <section>
-        <h2 className="mb-2 font-semibold">Donos</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-semibold">Donos</h2>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/clientes/${cliente.id}/donos/novo`}>Cadastrar Dono</Link>
+          </Button>
+        </div>
+        {cliente.donos.length === 0 && (
+          <p className="text-muted-foreground rounded-lg border border-dashed p-3 text-sm">
+            Nenhum Dono cadastrado. Sem um Dono, ninguém do cliente acessa o gestor e o PDV.
+          </p>
+        )}
         <ul className="grid gap-3">
           {cliente.donos.map((d) => (
             <li

@@ -23,6 +23,7 @@ const ROTULOS_FIXOS: Record<string, string> = {
 /** Segmentos que agrupam sub-recursos e não têm página própria. */
 const INTERMEDIARIOS: Record<string, { item: string; nova: string }> = {
   empresas: { item: "Empresa", nova: "Nova empresa" },
+  donos: { item: "Dono", nova: "Novo Dono" },
 };
 
 const pareceId = (s: string) => /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(s);

@@ -32,6 +32,14 @@ describe("trilha de navegação", () => {
     ]);
   });
 
+  it("novo Dono do cliente", () => {
+    expect(etapasDoCaminho(`/clientes/${ID}/donos/novo`, itens)).toEqual([
+      { rotulo: "Clientes", href: "/clientes" },
+      { rotulo: "Detalhes", href: `/clientes/${ID}` },
+      { rotulo: "Novo Dono" },
+    ]);
+  });
+
   it("responsável do cliente", () => {
     expect(etapasDoCaminho(`/clientes/${ID}/responsavel`, itens)).toEqual([
       { rotulo: "Clientes", href: "/clientes" },

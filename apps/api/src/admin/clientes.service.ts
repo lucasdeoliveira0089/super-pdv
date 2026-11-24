@@ -3,8 +3,9 @@ import { and, asc, eq, exists, ilike, inArray, or, schema } from "@super-pdv/db"
 import {
   type Cliente,
   type ClienteAtualizar,
-  type ClienteCriadoResponse,
   type ClienteCriar,
+  type DonoCriadoResponse,
+  type DonoCriar,
   type Empresa,
   type EmpresaAtualizar,
   type EmpresaCriar,
@@ -33,7 +34,7 @@ function traduzirConflitos(erro: unknown, prefixo = ""): never {
     throw conflito("CNPJ já cadastrado", `${prefixo}cnpj`);
   }
   if (violouUnicidade(erro, "usuarios_email_unique")) {
-    throw conflito("E-mail já está em uso", "dono.email");
+    throw conflito("E-mail já está em uso", `${prefixo}email`);
   }
   throw erro;
 }
@@ -49,9 +50,8 @@ export class ClientesService {
     private readonly auth: AuthCore,
   ) {}
 
-  async criar(dados: ClienteCriar): Promise<ClienteCriadoResponse> {
-    const senhaTemporaria = gerarSenhaTemporaria();
-    const senhaHash = await hashSenha(senhaTemporaria);
+  /** Cliente e primeira empresa; nenhum usuário é criado (spec client-provisioning). */
+  async criar(dados: ClienteCriar): Promise<Cliente> {
     try {
       const clienteId = await this.system.transacao(async (tx) => {
         // O nome do cliente é o nome fantasia da primeira empresa (spec client-provisioning).
@@ -63,19 +63,37 @@ export class ClientesService {
           })
           .returning();
         await tx.insert(schema.empresas).values(colunasDaEmpresa(cliente!.id, dados.empresa));
-        await tx.insert(schema.usuarios).values({
-          tenantId: cliente!.id,
-          nome: dados.dono.nome,
-          email: dados.dono.email,
+        return cliente!.id;
+      });
+      return await this.obter(clienteId);
+    } catch (erro) {
+      traduzirConflitos(erro, "empresa.");
+    }
+  }
+
+  /** Usuário Dono cadastrado no detalhe do cliente, com senha temporária exibida uma vez. */
+  async adicionarDono(clienteId: string, dados: DonoCriar): Promise<DonoCriadoResponse> {
+    await this.obter(clienteId);
+    const senhaTemporaria = gerarSenhaTemporaria();
+    const senhaHash = await hashSenha(senhaTemporaria);
+    try {
+      const [dono] = await this.system.db
+        .insert(schema.usuarios)
+        .values({
+          tenantId: clienteId,
+          nome: dados.nome,
+          email: dados.email,
           senhaHash,
           senhaTemporaria: true,
           papel: "dono",
-        });
-        return cliente!.id;
-      });
-      return { cliente: await this.obter(clienteId), senhaTemporaria };
+        })
+        .returning();
+      return {
+        dono: { id: dono!.id, nome: dono!.nome, email: dono!.email, ativo: dono!.ativo },
+        senhaTemporaria,
+      };
     } catch (erro) {
-      traduzirConflitos(erro, "empresa.");
+      traduzirConflitos(erro);
     }
   }
 

@@ -52,6 +52,9 @@ Abaixo de `sm`, tudo vira uma coluna.
 - sem Dono, o detalhe mostra "Nenhum Dono cadastrado".
 - *Alternativa: o responsável virar o Dono.* Foi descartada pelo usuário: o Dono é cadastrado à parte, depois do cliente.
 
+### Portas próprias nos E2E
+Os E2E do admin e do gestor reaproveitavam a API (3333) e os apps (3001/3000) que estivessem no ar. Durante esta mudança, isso os fez rodar contra servidores de desenvolvimento desatualizados: sem o CEP falso, sem o limite de logins dos testes e com o contrato antigo do cadastro de cliente. Cada suíte passa a subir os seus próprios servidores em portas exclusivas: admin 3101 e API 3433; gestor 3100 e API 3434, com `GESTOR_URL` apontando para os links de e-mail. Elas são reaproveitadas apenas entre execuções da própria suíte, fora do CI.
+
 ## Risks / Trade-offs
 
 - [Seletores dos E2E baseados nas legendas antigas ("Endereço da empresa")] → Ajustados na mesma mudança. Os rótulos dos campos não mudam, exceto "Complemento" no cartão, que os testes não usam.

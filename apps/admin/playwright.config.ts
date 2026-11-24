@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 // Porta própria dos E2E (o admin de desenvolvimento usa a 3001): os testes nunca
 // reaproveitam um admin iniciado sem a configuração deles (ex.: sem o CEP falso).
 const PORT = 3101;
+/** API própria dos E2E do admin (a de desenvolvimento usa a 3333 e pode estar desatualizada). */
+const PORTA_API = 3433;
 /** Serviço de CEP falso (e2e/cep-falso.mjs): nenhum teste acessa o ViaCEP real. */
 const PORTA_CEP = 3901;
 
@@ -23,13 +25,12 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      // A mesma API serve o admin e o gestor: reaproveitada se já estiver no ar.
       command: "pnpm --filter @super-pdv/api build && pnpm --filter @super-pdv/api start",
-      url: "http://localhost:3333/health/ready",
-      reuseExistingServer: true,
+      url: `http://localhost:${PORTA_API}/health/ready`,
+      reuseExistingServer: !process.env.CI,
       timeout: 180_000,
       // Os E2E fazem muitos logins seguidos a partir do mesmo IP.
-      env: { LIMITE_AUTH_POR_MINUTO: "1000" },
+      env: { PORT: String(PORTA_API), LIMITE_AUTH_POR_MINUTO: "1000" },
     },
     {
       command: "node e2e/cep-falso.mjs",
@@ -43,7 +44,10 @@ export default defineConfig({
       port: PORT,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      env: { API_URL: "http://localhost:3333", CEP_API_URL: `http://localhost:${PORTA_CEP}/ws` },
+      env: {
+        API_URL: `http://localhost:${PORTA_API}`,
+        CEP_API_URL: `http://localhost:${PORTA_CEP}/ws`,
+      },
     },
   ],
 });

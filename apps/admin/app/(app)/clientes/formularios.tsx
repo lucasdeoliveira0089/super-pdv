@@ -13,6 +13,7 @@ import {
   adicionarEmpresa,
   atualizarEmpresa,
   atualizarResponsavel,
+  cadastrarDono,
   criarCliente,
   redefinirSenhaDono,
 } from "./acoes";
@@ -44,17 +45,8 @@ function CampoCelular(props: {
 }
 
 export function FormNovoCliente() {
+  // Sucesso: a ação redireciona para o detalhe do cliente.
   const [estado, enviar] = useActionState(criarCliente, null);
-  if (estado?.senhaTemporaria) {
-    return (
-      <div className="grid max-w-xl gap-4">
-        <SenhaTemporaria senha={estado.senhaTemporaria} para={estado.para ?? "o Dono"} />
-        <Button asChild>
-          <Link href={`/clientes/${estado.id}`}>Ver cliente</Link>
-        </Button>
-      </div>
-    );
-  }
   const c = estado?.campos;
   const v = estado?.valores;
   return (
@@ -115,29 +107,6 @@ export function FormNovoCliente() {
             autoComplete="email"
             defaultValue={v?.responsavelEmail}
             erros={c?.["responsavel.email"]}
-          />
-        </div>
-      </SecaoFormulario>
-      <SecaoFormulario
-        titulo="Dono"
-        descricao="Quem acessa o gestor e o PDV. Recebe uma senha temporária, exibida uma única vez."
-      >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <CampoTexto
-            name="donoNome"
-            rotulo="Nome do Dono"
-            obrigatorio
-            defaultValue={v?.donoNome}
-            erros={c?.["dono.nome"]}
-          />
-          <CampoTexto
-            name="donoEmail"
-            rotulo="E-mail do Dono"
-            obrigatorio
-            type="email"
-            descricao="Login no gestor e no PDV."
-            defaultValue={v?.donoEmail}
-            erros={c?.["dono.email"]}
           />
         </div>
       </SecaoFormulario>
@@ -248,6 +217,54 @@ export function FormResponsavel({
         />
         <BotaoEnviar pendente="Salvando…">Salvar responsável</BotaoEnviar>
       </FieldGroup>
+    </form>
+  );
+}
+
+/** Cadastro de Dono no detalhe do cliente; mostra a senha temporária uma única vez. */
+export function FormDono({ clienteId }: { clienteId: string }) {
+  const [estado, enviar] = useActionState(cadastrarDono, null);
+  if (estado?.senhaTemporaria) {
+    return (
+      <div className="grid max-w-xl gap-4">
+        <SenhaTemporaria senha={estado.senhaTemporaria} para={estado.para ?? "o Dono"} />
+        <Button asChild>
+          <Link href={`/clientes/${clienteId}`}>Voltar ao cliente</Link>
+        </Button>
+      </div>
+    );
+  }
+  const c = estado?.campos;
+  const v = estado?.valores;
+  return (
+    <form action={enviar} noValidate className="grid max-w-3xl gap-6">
+      <AlertaErro mensagem={estado?.mensagem} />
+      <input type="hidden" name="clienteId" value={clienteId} />
+      <SecaoFormulario titulo="Dono">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <CampoTexto
+            name="nome"
+            rotulo="Nome do Dono"
+            obrigatorio
+            autoFocus
+            autoComplete="name"
+            defaultValue={v?.nome}
+            erros={c?.nome}
+          />
+          <CampoTexto
+            name="email"
+            rotulo="E-mail do Dono"
+            obrigatorio
+            type="email"
+            autoComplete="email"
+            defaultValue={v?.email}
+            erros={c?.email}
+          />
+        </div>
+      </SecaoFormulario>
+      <div>
+        <BotaoEnviar pendente="Cadastrando…">Cadastrar Dono</BotaoEnviar>
+      </div>
     </form>
   );
 }

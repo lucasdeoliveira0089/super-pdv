@@ -1,5 +1,5 @@
 import { count, eq, schema } from "@super-pdv/db";
-import { clienteCriadoResponseSchema, clienteSchema, empresaSchema } from "@super-pdv/shared";
+import { clienteSchema, donoCriadoResponseSchema, empresaSchema } from "@super-pdv/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type AppDeTeste, bearer, criarAppDeTeste, gerarCnpj } from "./app-de-teste";
 
@@ -31,12 +31,34 @@ describe("admin: clientes e empresas (integração)", () => {
   const novoCliente = (sobrescrever: Record<string, unknown> = {}) => ({
     empresa: novaEmpresa(),
     responsavel: { nome: "Maria Silva", celular: "(11) 98765-4321", email: "maria@silva.com.br" },
-    dono: {
-      nome: "João Silva",
-      email: `joao${Math.random().toString(36).slice(2, 8)}@silva.com.br`,
-    },
     ...sobrescrever,
   });
+
+  const novoDono = () => ({
+    nome: "João Silva",
+    email: `joao${Math.random().toString(36).slice(2, 8)}@silva.com.br`,
+  });
+
+  /** Cadastra cliente pela API e devolve o id. */
+  const cadastrarCliente = async (dados = novoCliente()) =>
+    clienteSchema.parse(
+      (await t.http().post("/v1/admin/clientes").set(bearer(equipe)).send(dados).expect(201)).body,
+    ).id;
+
+  /** Cadastra um Dono para o cliente e devolve e-mail e senha temporária. */
+  const cadastrarDono = async (clienteId: string, dono = novoDono()) => {
+    const r = donoCriadoResponseSchema.parse(
+      (
+        await t
+          .http()
+          .post(`/v1/admin/clientes/${clienteId}/donos`)
+          .set(bearer(equipe))
+          .send(dono)
+          .expect(201)
+      ).body,
+    );
+    return { email: dono.email, senhaTemporaria: r.senhaTemporaria, id: r.dono.id };
+  };
 
   const totalClientes = async () =>
     (await t.system.db.select({ n: count() }).from(schema.clientes))[0]!.n;
@@ -52,15 +74,16 @@ describe("admin: clientes e empresas (integração)", () => {
   });
 
   describe("cadastro de cliente", () => {
-    it("cria cliente, 1ª empresa e Dono com senha temporária exibida uma vez", async () => {
+    it("cria cliente e 1ª empresa, sem nenhum usuário", async () => {
       const dados = novoCliente();
       const res = await t
         .http()
         .post("/v1/admin/clientes")
         .set(bearer(equipe))
-        .send(dados)
+        .send({ ...dados, dono: novoDono() })
         .expect(201);
-      const { cliente, senhaTemporaria } = clienteCriadoResponseSchema.parse(res.body);
+      const cliente = clienteSchema.parse(res.body);
+      expect(res.body).not.toHaveProperty("senhaTemporaria");
       // O nome do cliente vem do nome fantasia da primeira empresa.
       expect(cliente).toMatchObject({
         nome: "Mercado Silva",
@@ -82,14 +105,13 @@ describe("admin: clientes e empresas (integração)", () => {
           uf: "SP",
         },
       });
-      expect(cliente.donos).toEqual([
-        expect.objectContaining({ email: dados.dono.email, ativo: true }),
-      ]);
-
-      // O Dono entra com a senha temporária e precisa trocá-la.
-      const tokens = await t.entrar(dados.dono.email, senhaTemporaria);
-      const me = (await t.http().get("/v1/me").set(bearer(tokens)).expect(200)).body;
-      expect(me).toMatchObject({ papel: "dono", senhaTemporaria: true });
+      // Um Dono enviado no cadastro é ignorado: nenhum usuário é criado.
+      expect(cliente.donos).toEqual([]);
+      const usuarios = await t.system.db
+        .select({ n: count() })
+        .from(schema.usuarios)
+        .where(eq(schema.usuarios.tenantId, cliente.id));
+      expect(usuarios[0]!.n).toBe(0);
     });
 
     it("um nome do cliente enviado é ignorado", async () => {
@@ -99,7 +121,7 @@ describe("admin: clientes e empresas (integração)", () => {
         .set(bearer(equipe))
         .send({ ...novoCliente(), nome: "Grupo Silva" })
         .expect(201);
-      expect(clienteCriadoResponseSchema.parse(res.body).cliente.nome).toBe("Mercado Silva");
+      expect(clienteSchema.parse(res.body).nome).toBe("Mercado Silva");
     });
 
     it("sem o celular do responsável: nada é criado e o erro aponta o campo", async () => {
@@ -166,22 +188,79 @@ describe("admin: clientes e empresas (integração)", () => {
       expect(res.body.fieldErrors["empresa.cnpj"]).toEqual(["CNPJ já cadastrado"]);
       expect(await totalClientes()).toBe(antes);
     });
+  });
 
-    it("e-mail do Dono já usado em outro cliente: 409 e nada é criado", async () => {
+  describe("cadastro do Dono", () => {
+    it("cria o Dono com senha temporária, que precisa ser trocada", async () => {
+      const clienteId = await cadastrarCliente();
+      const dono = await cadastrarDono(clienteId);
+      const cliente = clienteSchema.parse(
+        (await t.http().get(`/v1/admin/clientes/${clienteId}`).set(bearer(equipe)).expect(200))
+          .body,
+      );
+      expect(cliente.donos).toEqual([expect.objectContaining({ email: dono.email, ativo: true })]);
+      const tokens = await t.entrar(dono.email, dono.senhaTemporaria);
+      const me = (await t.http().get("/v1/me").set(bearer(tokens)).expect(200)).body;
+      expect(me).toMatchObject({ papel: "dono", senhaTemporaria: true });
+    });
+
+    it("cliente pode ter mais de um Dono", async () => {
+      const clienteId = await cadastrarCliente();
+      await cadastrarDono(clienteId);
+      await cadastrarDono(clienteId);
+      const cliente = clienteSchema.parse(
+        (await t.http().get(`/v1/admin/clientes/${clienteId}`).set(bearer(equipe)).expect(200))
+          .body,
+      );
+      expect(cliente.donos).toHaveLength(2);
+    });
+
+    it("e-mail já usado em qualquer cliente: 409 no campo e-mail", async () => {
       const outro = await t.criarCliente();
       const existente = await t.criarUsuario(outro, {
         papel: "operador",
         empresaIds: [await t.criarEmpresa(outro)],
       });
-      const antes = await totalClientes();
+      const clienteId = await cadastrarCliente();
       const res = await t
         .http()
-        .post("/v1/admin/clientes")
+        .post(`/v1/admin/clientes/${clienteId}/donos`)
         .set(bearer(equipe))
-        .send(novoCliente({ dono: { nome: "Fulano", email: existente.email } }))
+        .send({ nome: "Fulano", email: existente.email })
         .expect(409);
-      expect(res.body.fieldErrors["dono.email"]).toEqual(["E-mail já está em uso"]);
-      expect(await totalClientes()).toBe(antes);
+      expect(res.body.fieldErrors.email).toEqual(["E-mail já está em uso"]);
+    });
+
+    it("dados inválidos: 400 no campo", async () => {
+      const clienteId = await cadastrarCliente();
+      const res = await t
+        .http()
+        .post(`/v1/admin/clientes/${clienteId}/donos`)
+        .set(bearer(equipe))
+        .send({ nome: "", email: "joao" })
+        .expect(400);
+      expect(Object.keys(res.body.fieldErrors).sort()).toEqual(["email", "nome"]);
+    });
+
+    it("cliente inexistente: 404", async () => {
+      await t
+        .http()
+        .post("/v1/admin/clientes/0190a4b2-7c3d-7e8f-9a0b-1c2d3e4f5a6b/donos")
+        .set(bearer(equipe))
+        .send(novoDono())
+        .expect(404);
+    });
+
+    it("usuário de cliente não cadastra Dono pelo admin (401)", async () => {
+      const clienteId = await cadastrarCliente();
+      const c = await t.criarCliente();
+      const dono = await t.criarUsuario(c, { papel: "dono" });
+      await t
+        .http()
+        .post(`/v1/admin/clientes/${clienteId}/donos`)
+        .set(bearer(await t.entrar(dono.email)))
+        .send(novoDono())
+        .expect(401);
     });
 
     it("usuário de cliente não acessa o cadastro de clientes (401)", async () => {
@@ -206,12 +285,9 @@ describe("admin: clientes e empresas (integração)", () => {
     beforeAll(async () => {
       const dados = novoCliente({ empresa: novaEmpresa({ nomeFantasia: "Supermercado Beta" }) });
       cnpj = dados.empresa.cnpj;
-      donoEmail = dados.dono.email;
-      const r = clienteCriadoResponseSchema.parse(
-        (await t.http().post("/v1/admin/clientes").set(bearer(equipe)).send(dados).expect(201))
-          .body,
-      );
-      clienteId = r.cliente.id;
+      clienteId = await cadastrarCliente(dados);
+      const r = await cadastrarDono(clienteId);
+      donoEmail = r.email;
       const tokens = await t.entrar(donoEmail, r.senhaTemporaria);
       donoSenha = "Dono#Senha2026";
       await t
@@ -357,7 +433,7 @@ describe("admin: clientes e empresas (integração)", () => {
           .send(novoCliente())
           .expect(201)
       ).body;
-      clienteId = r.cliente.id;
+      clienteId = r.id;
     });
 
     it("adiciona empresa com CNPJ alfanumérico", async () => {
