@@ -27,4 +27,4 @@
 ## 5. Integração
 
 - [x] 5.1 Atualizar o README (visão geral do layout e onde ficam os componentes de layout e o `DataTable`); verificar seguindo o texto num checkout limpo
-- [ ] 5.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` e `openspec validate revisao-layout-web --strict`; verificar sucesso local e o CI verde no PR
+- [x] 5.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm format:check` e `openspec validate revisao-layout-web --strict`; verificar sucesso local e o CI verde no PR
