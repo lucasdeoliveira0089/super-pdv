@@ -323,7 +323,7 @@ test.describe("largura do conteúdo", () => {
     };
   }
 
-  test("tela Full HD: lista com até 1280 px e formulário com até 768 px, centralizados", async ({
+  test("tela Full HD: lista e formulário ocupam o contêiner de até 1280 px, centralizados", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
@@ -337,11 +337,17 @@ test.describe("largura do conteúdo", () => {
     for (const alvo of [
       page.getByRole("heading", { level: 1, name: "Novo cliente" }).locator("../.."),
       page.getByRole("region", { name: "Empresa" }),
+      page.getByRole("region", { name: "Localização" }),
     ]) {
       const m = await medir(page, alvo);
-      expect(m.largura).toBeLessThanOrEqual(768);
+      // Mesma largura da lista (a tabela tem 1 px de borda de cada lado).
+      expect(Math.abs(m.largura - lista.largura)).toBeLessThanOrEqual(2);
       expect(m.desvio).toBeLessThan(2);
     }
+    // Em tela larga, os campos da empresa ficam na mesma linha.
+    const topo = async (rotulo: string) => (await page.getByLabel(rotulo).boundingBox())!.y;
+    expect(await topo("Razão social")).toBe(await topo("CNPJ"));
+    expect(await topo("Nome fantasia")).toBe(await topo("CNPJ"));
   });
 
   test("notebook: lista ocupa a largura disponível, sem rolagem horizontal", async ({ page }) => {

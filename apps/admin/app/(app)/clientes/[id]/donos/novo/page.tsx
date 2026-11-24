@@ -1,6 +1,6 @@
 import { clienteSchema } from "@super-pdv/shared";
 import { carregar } from "@super-pdv/web-session";
-import { CabecalhoPagina, ConteudoFormulario } from "@super-pdv/web-session/telas";
+import { CabecalhoPagina } from "@super-pdv/web-session/telas";
 import { api } from "../../../../../../lib/sessao";
 import { FormDono } from "../../../formularios";
 
@@ -12,9 +12,9 @@ export default async function NovoDonoPage({ params }: { params: Promise<{ id: s
     (await api()).requisitar("GET", `/v1/admin/clientes/${id}`, { schema: clienteSchema }),
   );
   return (
-    <ConteudoFormulario>
+    <>
       <CabecalhoPagina titulo="Cadastrar Dono" descricao={cliente.nome} />
       <FormDono clienteId={cliente.id} />
-    </ConteudoFormulario>
+    </>
   );
 }

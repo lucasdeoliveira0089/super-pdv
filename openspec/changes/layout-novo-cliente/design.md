@@ -36,24 +36,12 @@ Quando `obrigatorio` é verdadeiro, o rótulo ganha um `*` na cor de erro, com `
 ### `CamposEndereco` com duas apresentações
 O componente ganha a propriedade `cartao`. Com ela, renderiza uma `SecaoFormulario` "Localização" com os obrigatórios marcados e o rótulo "Complemento" sem o "(opcional)", já que a ausência do asterisco indica isso. Sem ela, mantém o `FieldSet` atual, que continua sendo usado nos formulários de empresa. O `ref` usado para achar o formulário passa a ficar num elemento comum às duas apresentações, com `closest("form")`, para a correção da UF valer em ambas.
 
-### Grade de campos
-O formulário passa a `max-w-3xl`. Dentro de cada cartão:
-- razão social e nome fantasia ficam lado a lado (`sm:grid-cols-2`);
-- o celular e o e-mail do responsável ficam lado a lado;
-- o nome e o e-mail do Dono ficam lado a lado;
-- a Localização mantém a grade atual (número e complemento, cidade e UF).
+### Largura e grade de campos
+Todo o conteúdo ocupa o contêiner centralizado de até 1280 px (`max-w-7xl`) da casca, inclusive os formulários. Não há colunas mais estreitas dentro dele: o usuário pediu que o conteúdo use de fato a largura do contêiner. Para os campos não ficarem longos demais, os formulários usam grades responsivas:
+- **Empresa e Responsável:** 3 colunas a partir de `lg` e 2 a partir de `sm`.
+- **Localização:** em `lg`, duas linhas: `[CEP 10rem | logradouro | número 8rem]` e `[complemento | bairro | cidade | UF 8rem]`.
 
 Abaixo de `sm`, tudo vira uma coluna.
-
-### Dono fora do cadastro de cliente
-`clienteCriarSchema` perde `dono`, e `ClientesService.criar` grava só cliente e empresa, ainda numa transação. A resposta passa a ser o próprio `Cliente`, sem senha. Para o Dono, há uma rota nova, `POST /v1/admin/clientes/:id/donos`, com `{ nome, email }`, no mesmo controller e com a mesma proteção de equipe. Ela devolve `{ dono, senhaTemporaria }` e reaproveita a geração de senha e a tradução da unicidade do e-mail (409 no campo `email`) que já existiam no cadastro. No admin:
-- o formulário "Novo cliente" redireciona para o detalhe depois de salvar;
-- o detalhe ganha "Cadastrar Dono", que abre `/clientes/[id]/donos/novo` (nome e e-mail) e mostra a senha temporária com o componente `SenhaTemporaria` que já existe;
-- sem Dono, o detalhe mostra "Nenhum Dono cadastrado".
-- *Alternativa: o responsável virar o Dono.* Foi descartada pelo usuário: o Dono é cadastrado à parte, depois do cliente.
-
-### Portas próprias nos E2E
-Os E2E do admin e do gestor reaproveitavam a API (3333) e os apps (3001/3000) que estivessem no ar. Durante esta mudança, isso os fez rodar contra servidores de desenvolvimento desatualizados: sem o CEP falso, sem o limite de logins dos testes e com o contrato antigo do cadastro de cliente. Cada suíte passa a subir os seus próprios servidores em portas exclusivas: admin 3101 e API 3433; gestor 3100 e API 3434, com `GESTOR_URL` apontando para os links de e-mail. Elas são reaproveitadas apenas entre execuções da própria suíte, fora do CI.
 
 ## Risks / Trade-offs
 

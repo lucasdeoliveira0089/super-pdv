@@ -44,21 +44,23 @@ export function FormNovoUsuario({ papeis, empresas }: Opcoes) {
     <form action={enviar} noValidate>
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
-        <CampoTexto name="nome" rotulo="Nome" autoFocus defaultValue={v?.nome} erros={c?.nome} />
-        <CampoTexto
-          name="email"
-          rotulo="E-mail"
-          type="email"
-          defaultValue={v?.email}
-          erros={c?.email}
-        />
-        <CampoSelecao
-          name="papel"
-          rotulo="Papel"
-          opcoes={opcoesPapel(papeis)}
-          defaultValue={v?.papel ?? papeis.at(-1)}
-          erros={c?.papel}
-        />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <CampoTexto name="nome" rotulo="Nome" autoFocus defaultValue={v?.nome} erros={c?.nome} />
+          <CampoTexto
+            name="email"
+            rotulo="E-mail"
+            type="email"
+            defaultValue={v?.email}
+            erros={c?.email}
+          />
+          <CampoSelecao
+            name="papel"
+            rotulo="Papel"
+            opcoes={opcoesPapel(papeis)}
+            defaultValue={v?.papel ?? papeis.at(-1)}
+            erros={c?.papel}
+          />
+        </div>
         <CampoOpcoes
           name="empresaIds"
           rotulo="Empresas"
@@ -82,20 +84,24 @@ export function FormEditarUsuario({ usuario, papeis, empresas }: Opcoes & { usua
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
         <input type="hidden" name="id" value={usuario.id} />
-        <CampoTexto
-          name="nome"
-          rotulo="Nome"
-          autoFocus
-          defaultValue={usuario.nome}
-          erros={c?.nome}
-        />
-        <CampoSelecao
-          name="papel"
-          rotulo="Papel"
-          opcoes={opcoesPapel(papeis.includes(usuario.papel) ? papeis : [usuario.papel, ...papeis])}
-          defaultValue={usuario.papel}
-          erros={c?.papel}
-        />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <CampoTexto
+            name="nome"
+            rotulo="Nome"
+            autoFocus
+            defaultValue={usuario.nome}
+            erros={c?.nome}
+          />
+          <CampoSelecao
+            name="papel"
+            rotulo="Papel"
+            opcoes={opcoesPapel(
+              papeis.includes(usuario.papel) ? papeis : [usuario.papel, ...papeis],
+            )}
+            defaultValue={usuario.papel}
+            erros={c?.papel}
+          />
+        </div>
         <CampoOpcoes
           name="empresaIds"
           rotulo="Empresas"

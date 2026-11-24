@@ -36,7 +36,7 @@ Nos formulários que agrupam campos em cartões, os campos obrigatórios SHALL e
 - **THEN** o rótulo "CEP" tem asterisco e o campo é anunciado como obrigatório, e o rótulo "Complemento" não tem asterisco
 
 ### Requirement: Conteúdo centralizado com largura máxima
-O conteúdo das páginas autenticadas do admin e do gestor SHALL ficar centralizado na área ao lado do menu, com largura máxima de 1280 px em listas e detalhes e de 768 px em páginas de formulário; em áreas mais estreitas, o conteúdo MUST ocupar a largura disponível, com margem lateral.
+O conteúdo das páginas autenticadas do admin e do gestor SHALL ficar centralizado na área ao lado do menu e ocupar a largura de até 1280 px, inclusive em páginas de formulário, cujos campos MUST se distribuir em mais de uma coluna em telas largas; em áreas mais estreitas, o conteúdo MUST ocupar a largura disponível, com margem lateral.
 
 #### Scenario: Lista em tela Full HD
 - **WHEN** a equipe abre a lista de clientes numa janela de 1920 px de largura
@@ -44,7 +44,7 @@ O conteúdo das páginas autenticadas do admin e do gestor SHALL ficar centraliz
 
 #### Scenario: Formulário em tela Full HD
 - **WHEN** a equipe abre "Novo cliente" numa janela de 1920 px de largura
-- **THEN** o título e o formulário formam uma coluna de no máximo 768 px, centralizada ao lado do menu
+- **THEN** o título e os cartões do formulário ocupam a mesma largura da lista (até 1280 px), centralizados ao lado do menu, e CNPJ, razão social e nome fantasia ficam na mesma linha
 
 #### Scenario: Notebook
 - **WHEN** a equipe abre a lista de clientes numa janela de 1366 px de largura

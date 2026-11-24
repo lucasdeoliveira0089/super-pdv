@@ -56,16 +56,15 @@ export function FormNovoCliente() {
         Campos marcados com <span className="text-destructive">*</span> são obrigatórios.
       </p>
       <SecaoFormulario titulo="Empresa">
-        <CampoTexto
-          name="cnpj"
-          rotulo="CNPJ"
-          obrigatorio
-          className="sm:w-64"
-          autoFocus
-          defaultValue={v?.cnpj}
-          erros={c?.["empresa.cnpj"]}
-        />
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <CampoTexto
+            name="cnpj"
+            rotulo="CNPJ"
+            obrigatorio
+            autoFocus
+            defaultValue={v?.cnpj}
+            erros={c?.["empresa.cnpj"]}
+          />
           <CampoTexto
             name="razaoSocial"
             rotulo="Razão social"
@@ -84,15 +83,15 @@ export function FormNovoCliente() {
       </SecaoFormulario>
       <CamposEndereco cartao valores={v} erros={errosDoEndereco(c, "empresa.endereco.")} />
       <SecaoFormulario titulo="Responsável">
-        <CampoTexto
-          name="responsavelNome"
-          rotulo="Nome do responsável"
-          obrigatorio
-          autoComplete="name"
-          defaultValue={v?.responsavelNome}
-          erros={c?.["responsavel.nome"]}
-        />
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <CampoTexto
+            name="responsavelNome"
+            rotulo="Nome do responsável"
+            obrigatorio
+            autoComplete="name"
+            defaultValue={v?.responsavelNome}
+            erros={c?.["responsavel.nome"]}
+          />
           <CampoCelular
             name="responsavelCelular"
             obrigatorio
@@ -135,41 +134,48 @@ export function FormEmpresa({ clienteId, empresa }: { clienteId: string; empresa
           </Alert>
         )}
         <input type="hidden" name="clienteId" value={clienteId} />
-        {empresa ? (
-          <input type="hidden" name="empresaId" value={empresa.id} />
-        ) : (
-          <CampoTexto name="cnpj" rotulo="CNPJ" autoFocus defaultValue={v?.cnpj} erros={c?.cnpj} />
-        )}
-        <CampoTexto
-          name="razaoSocial"
-          rotulo="Razão social"
-          autoFocus={!!empresa}
-          defaultValue={v?.razaoSocial ?? empresa?.razaoSocial}
-          erros={c?.razaoSocial}
-        />
-        <CampoTexto
-          name="nomeFantasia"
-          rotulo="Nome fantasia"
-          defaultValue={v?.nomeFantasia ?? empresa?.nomeFantasia}
-          erros={c?.nomeFantasia}
-        />
+        {empresa && <input type="hidden" name="empresaId" value={empresa.id} />}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {!empresa && (
+            <CampoTexto
+              name="cnpj"
+              rotulo="CNPJ"
+              autoFocus
+              defaultValue={v?.cnpj}
+              erros={c?.cnpj}
+            />
+          )}
+          <CampoTexto
+            name="razaoSocial"
+            rotulo="Razão social"
+            autoFocus={!!empresa}
+            defaultValue={v?.razaoSocial ?? empresa?.razaoSocial}
+            erros={c?.razaoSocial}
+          />
+          <CampoTexto
+            name="nomeFantasia"
+            rotulo="Nome fantasia"
+            defaultValue={v?.nomeFantasia ?? empresa?.nomeFantasia}
+            erros={c?.nomeFantasia}
+          />
+          {empresa && (
+            <CampoSelecao
+              name="ativa"
+              rotulo="Situação"
+              defaultValue={v?.ativa ?? String(empresa.ativa)}
+              opcoes={[
+                { valor: "true", rotulo: "Ativa" },
+                { valor: "false", rotulo: "Inativa" },
+              ]}
+            />
+          )}
+        </div>
         <CamposEndereco
           legenda="Endereço"
           valores={v ?? valoresDoEndereco(empresa?.endereco)}
           erros={errosDoEndereco(c, "endereco.")}
         />
-        {empresa && (
-          <CampoSelecao
-            name="ativa"
-            rotulo="Situação"
-            defaultValue={v?.ativa ?? String(empresa.ativa)}
-            opcoes={[
-              { valor: "true", rotulo: "Ativa" },
-              { valor: "false", rotulo: "Inativa" },
-            ]}
-          />
-        )}
-        <BotaoEnviar pendente="Salvando…">
+        <BotaoEnviar className="w-fit" pendente="Salvando…">
           {empresa ? "Salvar empresa" : "Adicionar empresa"}
         </BotaoEnviar>
       </FieldGroup>
@@ -192,30 +198,34 @@ export function FormResponsavel({
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
         <input type="hidden" name="clienteId" value={clienteId} />
-        <CampoTexto
-          name="nome"
-          rotulo="Nome do responsável"
-          autoFocus
-          autoComplete="name"
-          defaultValue={v?.nome ?? responsavel?.nome}
-          erros={c?.["responsavel.nome"]}
-        />
-        <CampoCelular
-          name="celular"
-          defaultValue={
-            v?.celular ?? (responsavel ? formatarCelular(responsavel.celular) : undefined)
-          }
-          erros={c?.["responsavel.celular"]}
-        />
-        <CampoTexto
-          name="email"
-          rotulo="E-mail do responsável"
-          type="email"
-          autoComplete="email"
-          defaultValue={v?.email ?? responsavel?.email}
-          erros={c?.["responsavel.email"]}
-        />
-        <BotaoEnviar pendente="Salvando…">Salvar responsável</BotaoEnviar>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <CampoTexto
+            name="nome"
+            rotulo="Nome do responsável"
+            autoFocus
+            autoComplete="name"
+            defaultValue={v?.nome ?? responsavel?.nome}
+            erros={c?.["responsavel.nome"]}
+          />
+          <CampoCelular
+            name="celular"
+            defaultValue={
+              v?.celular ?? (responsavel ? formatarCelular(responsavel.celular) : undefined)
+            }
+            erros={c?.["responsavel.celular"]}
+          />
+          <CampoTexto
+            name="email"
+            rotulo="E-mail do responsável"
+            type="email"
+            autoComplete="email"
+            defaultValue={v?.email ?? responsavel?.email}
+            erros={c?.["responsavel.email"]}
+          />
+        </div>
+        <BotaoEnviar className="w-fit" pendente="Salvando…">
+          Salvar responsável
+        </BotaoEnviar>
       </FieldGroup>
     </form>
   );
@@ -228,7 +238,7 @@ export function FormDono({ clienteId }: { clienteId: string }) {
     return (
       <div className="grid gap-4">
         <SenhaTemporaria senha={estado.senhaTemporaria} para={estado.para ?? "o Dono"} />
-        <Button asChild>
+        <Button asChild className="w-fit">
           <Link href={`/clientes/${clienteId}`}>Voltar ao cliente</Link>
         </Button>
       </div>

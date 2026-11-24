@@ -31,6 +31,11 @@
 - [x] 6.1 Na casca compartilhada (`packages/web-session/src/casca.tsx`), centralizar o conteúdo com largura máxima de 1280 px, e criar `ConteudoFormulario` (coluna centralizada de 768 px) em `telas.tsx`, usando-o nas páginas de formulário do admin (novo cliente, nova empresa, editar empresa, responsável, novo Dono) e do gestor (novo e editar usuário). Corrigir a descrição de "Novo cliente", que ainda cita o Dono. Verificar com E2E do admin a 1920 px: a lista de clientes centralizada com até 1280 px e "Novo cliente" centralizado com até 768 px; e a 1366 px, sem rolagem horizontal.
 - [x] 6.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam.
 
+## 7. Formulários na largura do contêiner
+
+- [x] 7.1 Remover `ConteudoFormulario` e as larguras máximas próprias dos formulários, para que ocupem o contêiner de 1280 px, e distribuir os campos em colunas em telas largas: Empresa e Responsável em 3 colunas; Localização em 2 linhas (CEP, logradouro e número; complemento, bairro, cidade e UF); formulários de empresa, responsável, Dono e de usuário do gestor em 2 ou 3 colunas. Verificar com o E2E de largura: título e cartões de "Novo cliente" com a largura da lista e CNPJ, razão social e nome fantasia na mesma linha a 1920 px; e uma coluna a 390 px.
+- [x] 7.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

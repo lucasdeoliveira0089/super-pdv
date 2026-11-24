@@ -22,11 +22,6 @@ export {
 } from "./casca";
 
 /** Cabeçalho padrão de página com ações à direita. */
-/** Coluna centralizada de até 768 px para páginas de formulário (spec web-layout). */
-export function ConteudoFormulario({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">{children}</div>;
-}
-
 export function CabecalhoPagina({
   titulo,
   descricao,

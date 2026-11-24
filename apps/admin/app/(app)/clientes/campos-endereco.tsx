@@ -132,34 +132,34 @@ export function CamposEndereco({
   const obrigatorio = cartao;
   const campos = (
     <div ref={grupo} className="contents">
-      <div className="grid gap-1">
+      {/* Em telas largas, duas linhas: CEP, logradouro e número; complemento, bairro, cidade e UF. */}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[10rem_1fr_8rem]">
+        <div className="grid content-start gap-1">
+          <CampoTexto
+            name="cep"
+            rotulo="CEP"
+            obrigatorio={obrigatorio}
+            inputMode="numeric"
+            autoComplete="postal-code"
+            maxLength={9}
+            value={v.cep}
+            onChange={mudarCep}
+            onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
+            erros={erros?.cep}
+          />
+          <FieldDescription role="status" aria-live="polite" className="empty:hidden">
+            {aviso && AVISOS[aviso]}
+          </FieldDescription>
+        </div>
         <CampoTexto
-          name="cep"
-          rotulo="CEP"
+          name="logradouro"
+          rotulo="Logradouro"
           obrigatorio={obrigatorio}
-          inputMode="numeric"
-          autoComplete="postal-code"
-          maxLength={9}
-          className="sm:w-40"
-          value={v.cep}
-          onChange={mudarCep}
-          onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
-          erros={erros?.cep}
+          autoComplete="address-line1"
+          value={v.logradouro}
+          onChange={aoMudar}
+          erros={erros?.logradouro}
         />
-        <FieldDescription role="status" aria-live="polite" className="empty:hidden">
-          {aviso && AVISOS[aviso]}
-        </FieldDescription>
-      </div>
-      <CampoTexto
-        name="logradouro"
-        rotulo="Logradouro"
-        obrigatorio={obrigatorio}
-        autoComplete="address-line1"
-        value={v.logradouro}
-        onChange={aoMudar}
-        erros={erros?.logradouro}
-      />
-      <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
         <CampoTexto
           ref={numero}
           name="numero"
@@ -169,6 +169,8 @@ export function CamposEndereco({
           onChange={aoMudar}
           erros={erros?.numero}
         />
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_8rem]">
         <CampoTexto
           name="complemento"
           rotulo={cartao ? "Complemento" : "Complemento (opcional)"}
@@ -177,16 +179,14 @@ export function CamposEndereco({
           onChange={aoMudar}
           erros={erros?.complemento}
         />
-      </div>
-      <CampoTexto
-        name="bairro"
-        rotulo="Bairro"
-        obrigatorio={obrigatorio}
-        value={v.bairro}
-        onChange={aoMudar}
-        erros={erros?.bairro}
-      />
-      <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+        <CampoTexto
+          name="bairro"
+          rotulo="Bairro"
+          obrigatorio={obrigatorio}
+          value={v.bairro}
+          onChange={aoMudar}
+          erros={erros?.bairro}
+        />
         <CampoTexto
           name="cidade"
           rotulo="Cidade"
