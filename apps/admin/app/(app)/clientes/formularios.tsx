@@ -50,7 +50,7 @@ export function FormNovoCliente() {
   const c = estado?.campos;
   const v = estado?.valores;
   return (
-    <form action={enviar} noValidate className="grid max-w-3xl gap-6">
+    <form action={enviar} noValidate className="grid gap-6">
       <AlertaErro mensagem={estado?.mensagem} />
       <p className="text-muted-foreground text-sm">
         Campos marcados com <span className="text-destructive">*</span> são obrigatórios.
@@ -122,7 +122,7 @@ export function FormEmpresa({ clienteId, empresa }: { clienteId: string; empresa
   const c = estado?.campos;
   const v = estado?.valores;
   return (
-    <form action={enviar} noValidate className="max-w-xl">
+    <form action={enviar} noValidate>
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
         {empresa && !empresa.endereco && (
@@ -188,7 +188,7 @@ export function FormResponsavel({
   const c = estado?.campos;
   const v = estado?.valores;
   return (
-    <form action={enviar} noValidate className="max-w-xl">
+    <form action={enviar} noValidate>
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
         <input type="hidden" name="clienteId" value={clienteId} />
@@ -226,7 +226,7 @@ export function FormDono({ clienteId }: { clienteId: string }) {
   const [estado, enviar] = useActionState(cadastrarDono, null);
   if (estado?.senhaTemporaria) {
     return (
-      <div className="grid max-w-xl gap-4">
+      <div className="grid gap-4">
         <SenhaTemporaria senha={estado.senhaTemporaria} para={estado.para ?? "o Dono"} />
         <Button asChild>
           <Link href={`/clientes/${clienteId}`}>Voltar ao cliente</Link>
@@ -237,7 +237,7 @@ export function FormDono({ clienteId }: { clienteId: string }) {
   const c = estado?.campos;
   const v = estado?.valores;
   return (
-    <form action={enviar} noValidate className="grid max-w-3xl gap-6">
+    <form action={enviar} noValidate className="grid gap-6">
       <AlertaErro mensagem={estado?.mensagem} />
       <input type="hidden" name="clienteId" value={clienteId} />
       <SecaoFormulario titulo="Dono">

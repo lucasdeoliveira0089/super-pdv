@@ -26,6 +26,11 @@
 - [x] 5.3 No admin, fazer o cadastro de cliente redirecionar ao detalhe; no detalhe, mostrar "Nenhum Dono cadastrado" e o botão "Cadastrar Dono"; criar a tela `/clientes/[id]/donos/novo` com a senha temporária exibida uma vez. Verificar com um E2E: cadastrar cliente, ver "Nenhum Dono cadastrado", cadastrar o Dono, ver a senha e o Dono no detalhe, e ver o erro de e-mail repetido junto ao campo.
 - [x] 5.4 Atualizar o README (cadastro de cliente e do Dono). Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam.
 
+## 6. Conteúdo centralizado
+
+- [x] 6.1 Na casca compartilhada (`packages/web-session/src/casca.tsx`), centralizar o conteúdo com largura máxima de 1280 px, e criar `ConteudoFormulario` (coluna centralizada de 768 px) em `telas.tsx`, usando-o nas páginas de formulário do admin (novo cliente, nova empresa, editar empresa, responsável, novo Dono) e do gestor (novo e editar usuário). Corrigir a descrição de "Novo cliente", que ainda cita o Dono. Verificar com E2E do admin a 1920 px: a lista de clientes centralizada com até 1280 px e "Novo cliente" centralizado com até 768 px; e a 1366 px, sem rolagem horizontal.
+- [x] 6.2 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

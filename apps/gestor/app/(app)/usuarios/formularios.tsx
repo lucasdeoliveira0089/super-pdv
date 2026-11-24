@@ -25,7 +25,7 @@ export function FormNovoUsuario({ papeis, empresas }: Opcoes) {
   const [estado, enviar] = useActionState(criarUsuario, null);
   if (estado?.senhaTemporaria) {
     return (
-      <div className="grid max-w-xl gap-3">
+      <div className="grid gap-3">
         <SenhaTemporaria senha={estado.senhaTemporaria} para={estado.para ?? "o usuário"} />
         <div className="flex gap-2">
           <Button asChild>
@@ -41,7 +41,7 @@ export function FormNovoUsuario({ papeis, empresas }: Opcoes) {
   const c = estado?.campos;
   const v = estado?.valores;
   return (
-    <form action={enviar} noValidate className="max-w-xl">
+    <form action={enviar} noValidate>
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
         <CampoTexto name="nome" rotulo="Nome" autoFocus defaultValue={v?.nome} erros={c?.nome} />
@@ -78,7 +78,7 @@ export function FormEditarUsuario({ usuario, papeis, empresas }: Opcoes & { usua
   const [estado, enviar] = useActionState(atualizarUsuario, null);
   const c = estado?.campos;
   return (
-    <form action={enviar} noValidate className="max-w-xl">
+    <form action={enviar} noValidate>
       <FieldGroup>
         <AlertaErro mensagem={estado?.mensagem} />
         <input type="hidden" name="id" value={usuario.id} />

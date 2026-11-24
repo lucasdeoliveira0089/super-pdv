@@ -1,6 +1,6 @@
 import { clienteSchema, formatarCnpj } from "@super-pdv/shared";
 import { carregar } from "@super-pdv/web-session";
-import { CabecalhoPagina } from "@super-pdv/web-session/telas";
+import { CabecalhoPagina, ConteudoFormulario } from "@super-pdv/web-session/telas";
 import { notFound } from "next/navigation";
 import { api } from "../../../../../../lib/sessao";
 import { FormEmpresa } from "../../../formularios";
@@ -19,12 +19,12 @@ export default async function EditarEmpresaPage({
   const empresa = cliente.empresas.find((e) => e.id === empresaId);
   if (!empresa) notFound();
   return (
-    <>
+    <ConteudoFormulario>
       <CabecalhoPagina
         titulo={empresa.nomeFantasia}
         descricao={`CNPJ ${formatarCnpj(empresa.cnpj)} (não pode ser alterado)`}
       />
       <FormEmpresa clienteId={id} empresa={empresa} />
-    </>
+    </ConteudoFormulario>
   );
 }

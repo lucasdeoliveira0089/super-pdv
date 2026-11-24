@@ -5,7 +5,7 @@ import {
   usuarioSchema,
 } from "@super-pdv/shared";
 import { carregar } from "@super-pdv/web-session";
-import { CabecalhoPagina } from "@super-pdv/web-session/telas";
+import { CabecalhoPagina, ConteudoFormulario } from "@super-pdv/web-session/telas";
 import { redirect } from "next/navigation";
 import { api, idsDeEmpresas, usuarioLogado } from "../../../../../lib/sessao";
 import { FormEditarUsuario } from "../../formularios";
@@ -27,7 +27,7 @@ export default async function EditarUsuarioPage({ params }: { params: Promise<{ 
     cliente.requisitar("GET", "/v1/empresas", { schema: empresaSchema.array() }),
   );
   return (
-    <>
+    <ConteudoFormulario>
       <CabecalhoPagina
         titulo={`Editar ${usuario.nome}`}
         descricao={`${usuario.email} (não pode ser alterado)`}
@@ -37,6 +37,6 @@ export default async function EditarUsuarioPage({ params }: { params: Promise<{ 
         papeis={papeisAtribuiveis(eu.papel)}
         empresas={empresas.filter((e) => e.ativa || usuario.empresaIds.includes(e.id))}
       />
-    </>
+    </ConteudoFormulario>
   );
 }

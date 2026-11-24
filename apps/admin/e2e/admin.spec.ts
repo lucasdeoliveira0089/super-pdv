@@ -311,3 +311,46 @@ test.describe("clientes e empresas", () => {
     expect(Math.round(local!.width)).toBe(Math.round(empresa!.width));
   });
 });
+
+test.describe("largura do conteúdo", () => {
+  /** Largura e deslocamento do centro de um elemento em relação ao centro do <main>. */
+  async function medir(page: Page, alvo: ReturnType<Page["locator"]>) {
+    const main = (await page.locator("main").boundingBox())!;
+    const caixa = (await alvo.boundingBox())!;
+    return {
+      largura: caixa.width,
+      desvio: Math.abs(caixa.x + caixa.width / 2 - (main.x + main.width / 2)),
+    };
+  }
+
+  test("tela Full HD: lista com até 1280 px e formulário com até 768 px, centralizados", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await entrarComoEquipe(page);
+    const lista = await medir(page, page.getByRole("table", { name: "Clientes" }));
+    expect(lista.largura).toBeLessThanOrEqual(1280);
+    expect(lista.largura).toBeGreaterThan(1200);
+    expect(lista.desvio).toBeLessThan(2);
+
+    await page.goto("/clientes/novo");
+    for (const alvo of [
+      page.getByRole("heading", { level: 1, name: "Novo cliente" }).locator("../.."),
+      page.getByRole("region", { name: "Empresa" }),
+    ]) {
+      const m = await medir(page, alvo);
+      expect(m.largura).toBeLessThanOrEqual(768);
+      expect(m.desvio).toBeLessThan(2);
+    }
+  });
+
+  test("notebook: lista ocupa a largura disponível, sem rolagem horizontal", async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await entrarComoEquipe(page);
+    await expect(page.getByRole("table", { name: "Clientes" })).toBeVisible();
+    const rolagem = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(rolagem).toBe(0);
+  });
+});

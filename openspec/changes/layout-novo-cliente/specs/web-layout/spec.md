@@ -34,3 +34,18 @@ Nos formulários que agrupam campos em cartões, os campos obrigatórios SHALL e
 #### Scenario: Obrigatório e opcional
 - **WHEN** a equipe abre o cartão "Localização"
 - **THEN** o rótulo "CEP" tem asterisco e o campo é anunciado como obrigatório, e o rótulo "Complemento" não tem asterisco
+
+### Requirement: Conteúdo centralizado com largura máxima
+O conteúdo das páginas autenticadas do admin e do gestor SHALL ficar centralizado na área ao lado do menu, com largura máxima de 1280 px em listas e detalhes e de 768 px em páginas de formulário; em áreas mais estreitas, o conteúdo MUST ocupar a largura disponível, com margem lateral.
+
+#### Scenario: Lista em tela Full HD
+- **WHEN** a equipe abre a lista de clientes numa janela de 1920 px de largura
+- **THEN** o conteúdo tem no máximo 1280 px de largura e fica centralizado ao lado do menu
+
+#### Scenario: Formulário em tela Full HD
+- **WHEN** a equipe abre "Novo cliente" numa janela de 1920 px de largura
+- **THEN** o título e o formulário formam uma coluna de no máximo 768 px, centralizada ao lado do menu
+
+#### Scenario: Notebook
+- **WHEN** a equipe abre a lista de clientes numa janela de 1366 px de largura
+- **THEN** o conteúdo ocupa a largura disponível ao lado do menu, sem rolagem horizontal
