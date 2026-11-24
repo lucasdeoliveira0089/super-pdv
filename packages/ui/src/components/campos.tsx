@@ -12,6 +12,30 @@ interface BaseCampo {
   rotulo: string;
   erros?: string[];
   descricao?: string;
+  /** Marca o rótulo com asterisco e anuncia o campo como obrigatório (aria-required). */
+  obrigatorio?: boolean;
+}
+
+/** Rótulo com o asterisco de obrigatório (só visual; o anúncio vem do aria-required). */
+function Rotulo({
+  id,
+  rotulo,
+  obrigatorio,
+}: {
+  id: string;
+  rotulo: string;
+  obrigatorio?: boolean;
+}) {
+  return (
+    <FieldLabel htmlFor={id}>
+      {rotulo}
+      {obrigatorio && (
+        <span aria-hidden="true" className="text-destructive">
+          *
+        </span>
+      )}
+    </FieldLabel>
+  );
 }
 
 function Erros({ erros }: { erros?: string[] }) {
@@ -24,14 +48,21 @@ export function CampoTexto({
   rotulo,
   erros,
   descricao,
+  obrigatorio,
   id = name,
   ...input
 }: BaseCampo & Omit<React.ComponentProps<"input">, "name">) {
   const invalido = !!erros?.length;
   return (
     <Field data-invalid={invalido || undefined}>
-      <FieldLabel htmlFor={id}>{rotulo}</FieldLabel>
-      <Input id={id} name={name} aria-invalid={invalido || undefined} {...input} />
+      <Rotulo id={id} rotulo={rotulo} obrigatorio={obrigatorio} />
+      <Input
+        id={id}
+        name={name}
+        aria-invalid={invalido || undefined}
+        aria-required={obrigatorio || undefined}
+        {...input}
+      />
       {descricao && <FieldDescription>{descricao}</FieldDescription>}
       <Erros erros={erros} />
     </Field>
@@ -44,6 +75,7 @@ export function CampoSelecao({
   erros,
   descricao,
   opcoes,
+  obrigatorio,
   id = name,
   className,
   ...select
@@ -53,11 +85,12 @@ export function CampoSelecao({
   const invalido = !!erros?.length;
   return (
     <Field data-invalid={invalido || undefined}>
-      <FieldLabel htmlFor={id}>{rotulo}</FieldLabel>
+      <Rotulo id={id} rotulo={rotulo} obrigatorio={obrigatorio} />
       <select
         id={id}
         name={name}
         aria-invalid={invalido || undefined}
+        aria-required={obrigatorio || undefined}
         className={cn(
           "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive h-8 w-full rounded-lg border px-2.5 text-sm outline-none focus-visible:ring-3 disabled:opacity-50",
           className,

@@ -2,8 +2,8 @@
 
 ## 1. Componentes compartilhados (`packages/ui`)
 
-- [ ] 1.1 Adicionar a propriedade opcional `obrigatorio` a `CampoTexto` e `CampoSelecao`, com um asterisco `aria-hidden` no rótulo e `aria-required="true"` no controle. Verificar com um teste Vitest que um campo obrigatório expõe `aria-required` e o asterisco, que um sem a propriedade não expõe nenhum dos dois, e que os testes atuais de formulário continuam passando.
-- [ ] 1.2 Criar `SecaoFormulario`, um cartão com título `<h2>`, descrição e conteúdo, sobre o `Card` e numa `<section aria-labelledby>`. Verificar com um teste Vitest que a seção é encontrada pelo papel `region` com o nome do título.
+- [x] 1.1 Adicionar a propriedade opcional `obrigatorio` a `CampoTexto` e `CampoSelecao`, com um asterisco `aria-hidden` no rótulo e `aria-required="true"` no controle. Verificar com um teste Vitest que um campo obrigatório expõe `aria-required` e o asterisco, que um sem a propriedade não expõe nenhum dos dois, e que os testes atuais de formulário continuam passando.
+- [x] 1.2 Criar `SecaoFormulario`, um cartão com título `<h2>`, descrição e conteúdo, sobre o `Card` e numa `<section aria-labelledby>`. Verificar com um teste Vitest que a seção é encontrada pelo papel `region` com o nome do título.
 
 ## 2. Admin: tema claro
 
