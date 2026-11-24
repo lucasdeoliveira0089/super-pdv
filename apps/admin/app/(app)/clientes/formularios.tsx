@@ -52,9 +52,6 @@ export function FormNovoCliente() {
   return (
     <form action={enviar} noValidate className="grid gap-6">
       <AlertaErro mensagem={estado?.mensagem} />
-      <p className="text-muted-foreground text-sm">
-        Campos marcados com <span className="text-destructive">*</span> são obrigatórios.
-      </p>
       <SecaoFormulario titulo="Empresa">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <CampoTexto
