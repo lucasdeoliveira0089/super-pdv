@@ -125,7 +125,7 @@ export function CascaApp({
         </Sidebar>
         <SidebarInset>
           <CabecalhoApp itens={itens} />
-          <div className="flex flex-1 flex-col p-4 pt-0 md:p-6 md:pt-0">
+          <div className="flex flex-1 flex-col p-4 pt-6 md:p-6 md:pt-8">
             {/* Conteúdo centralizado, até 1280 px (spec web-layout). */}
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">{children}</div>
           </div>
