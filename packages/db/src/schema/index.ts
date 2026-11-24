@@ -37,13 +37,70 @@ const timestamps = {
     .$onUpdate(() => new Date()),
 };
 
-/** Cliente (tenant): quem contrata o Super PDV e usa o gestor. */
-export const clientes = pgTable("clientes", {
-  id: id(),
-  nome: text().notNull(),
-  ativo: boolean().notNull().default(true),
-  ...timestamps,
-});
+/** Siglas das 27 unidades federativas, para o CHECK de UF. */
+const UFS_SQL = sql.raw(
+  [
+    "AC",
+    "AL",
+    "AM",
+    "AP",
+    "BA",
+    "CE",
+    "DF",
+    "ES",
+    "GO",
+    "MA",
+    "MG",
+    "MS",
+    "MT",
+    "PA",
+    "PB",
+    "PE",
+    "PI",
+    "PR",
+    "RJ",
+    "RN",
+    "RO",
+    "RR",
+    "RS",
+    "SC",
+    "SE",
+    "SP",
+    "TO",
+  ]
+    .map((uf) => `'${uf}'`)
+    .join(", "),
+);
+
+/**
+ * Cliente (tenant): quem contrata o Super PDV e usa o gestor.
+ *
+ * O responsável é um contato para a equipe Super PDV (não é usuário). Aceita nulo
+ * porque clientes antigos não o têm, mas é tudo ou nada.
+ */
+export const clientes = pgTable(
+  "clientes",
+  {
+    id: id(),
+    nome: text().notNull(),
+    ativo: boolean().notNull().default(true),
+    responsavelNome: text(),
+    responsavelCelular: text(),
+    responsavelEmail: text(),
+    ...timestamps,
+  },
+  (t) => [
+    check(
+      "clientes_responsavel_completo",
+      sql`(${t.responsavelNome} IS NULL AND ${t.responsavelCelular} IS NULL AND ${t.responsavelEmail} IS NULL)
+        OR (${t.responsavelNome} IS NOT NULL AND ${t.responsavelCelular} IS NOT NULL AND ${t.responsavelEmail} IS NOT NULL)`,
+    ),
+    check(
+      "clientes_responsavel_celular_formato",
+      sql`${t.responsavelCelular} ~ '^[0-9]{2}9[0-9]{8}$'`,
+    ),
+  ],
+);
 
 /** Empresa (CNPJ). Cada estabelecimento tem o seu CNPJ. */
 export const empresas = pgTable(
@@ -57,12 +114,32 @@ export const empresas = pgTable(
     razaoSocial: text().notNull(),
     nomeFantasia: text().notNull(),
     ativa: boolean().notNull().default(true),
+    // Endereço: aceita nulo porque empresas antigas não o têm, mas é tudo ou nada
+    // (o complemento é o único opcional).
+    enderecoCep: text(),
+    enderecoLogradouro: text(),
+    enderecoNumero: text(),
+    enderecoComplemento: text(),
+    enderecoBairro: text(),
+    enderecoCidade: text(),
+    enderecoUf: text(),
     ...timestamps,
   },
   (t) => [
     unique("empresas_tenant_id_id_key").on(t.tenantId, t.id),
     index("empresas_tenant_id_idx").on(t.tenantId),
     check("empresas_cnpj_formato", sql`${t.cnpj} ~ '^[0-9A-Z]{12}[0-9]{2}$'`),
+    check("empresas_endereco_cep_formato", sql`${t.enderecoCep} ~ '^[0-9]{8}$'`),
+    check("empresas_endereco_uf_valida", sql`${t.enderecoUf} IN (${UFS_SQL})`),
+    check(
+      "empresas_endereco_completo",
+      sql`(${t.enderecoCep} IS NULL AND ${t.enderecoLogradouro} IS NULL AND ${t.enderecoNumero} IS NULL
+          AND ${t.enderecoComplemento} IS NULL AND ${t.enderecoBairro} IS NULL
+          AND ${t.enderecoCidade} IS NULL AND ${t.enderecoUf} IS NULL)
+        OR (${t.enderecoCep} IS NOT NULL AND ${t.enderecoLogradouro} IS NOT NULL
+          AND ${t.enderecoNumero} IS NOT NULL AND ${t.enderecoBairro} IS NOT NULL
+          AND ${t.enderecoCidade} IS NOT NULL AND ${t.enderecoUf} IS NOT NULL)`,
+    ),
   ],
 ).enableRLS();
 

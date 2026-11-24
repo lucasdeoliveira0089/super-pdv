@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { createDb, type DbClient, schema } from "@super-pdv/db";
 
 export const EQUIPE = { email: "equipe@superpdv.local", senha: "Equipe#Demo2026" };
 export const DONO_DEMO = { email: "dono@demo.local", senha: "Demo#Senha2026" };
@@ -46,3 +47,39 @@ export async function sair(page: Page): Promise<void> {
 
 /** Menu lateral principal (evita confundir com os links da trilha de navegação). */
 export const menu = (page: Page) => page.getByRole("navigation", { name: "Menu principal" });
+
+// ---------------------------------------------------------------- banco
+// Só para simular registros antigos (sem endereço ou sem responsável), que o
+// admin e a API não criam mais.
+
+const DATABASE_URL =
+  process.env.DATABASE_URL ?? "postgres://superpdv:superpdv@localhost:5432/superpdv";
+
+async function noBanco<T>(fn: (db: DbClient["db"]) => Promise<T>): Promise<T> {
+  const cliente = createDb(DATABASE_URL);
+  try {
+    return await fn(cliente.db);
+  } finally {
+    await cliente.close();
+  }
+}
+
+/** Empresa como as cadastradas antes do endereço existir. */
+export function criarEmpresaSemEndereco(clienteId: string, nomeFantasia: string, cnpj: string) {
+  return noBanco((db) =>
+    db.insert(schema.empresas).values({
+      tenantId: clienteId,
+      cnpj: cnpj.replace(/\D/g, ""),
+      razaoSocial: `${nomeFantasia} Ltda`,
+      nomeFantasia,
+    }),
+  );
+}
+
+/** Cliente como os cadastrados antes do responsável existir; devolve o id. */
+export function criarClienteSemResponsavel(nome: string): Promise<string> {
+  return noBanco(async (db) => {
+    const [c] = await db.insert(schema.clientes).values({ nome }).returning();
+    return c!.id;
+  });
+}

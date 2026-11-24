@@ -8,7 +8,7 @@ export default function NovoClientePage() {
     <>
       <CabecalhoPagina
         titulo="Novo cliente"
-        descricao="Cadastra o cliente com a primeira empresa e o usuário Dono, que recebe uma senha temporária."
+        descricao="Cadastra a primeira empresa com o endereço, o responsável pelo cliente e o usuário Dono, que recebe uma senha temporária."
       />
       <FormNovoCliente />
     </>

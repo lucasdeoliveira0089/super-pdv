@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { eq, schema } from "@super-pdv/db";
 import type { Papel } from "@super-pdv/shared";
 import { hashSenha } from "../auth/senhas";
+import { colunasDoEndereco, colunasDoResponsavel } from "../comum/cadastro";
 import type { Env } from "../config/env";
 import { SystemDb } from "../database/system-db";
 import type { ResultadoCli } from "./executar";
@@ -12,16 +13,39 @@ import type { ResultadoCli } from "./executar";
 export const SEED = {
   equipe: { nome: "Equipe Demonstração", email: "equipe@superpdv.local", senha: "Equipe#Demo2026" },
   cliente: "Demonstração",
+  responsavel: {
+    nome: "Responsável Demonstração",
+    celular: "11987654321",
+    email: "responsavel@demo.local",
+  },
   empresas: [
     {
       cnpj: "11222333000181",
       razaoSocial: "Mercado Demo Centro Ltda",
       nomeFantasia: "Mercado Demo Centro",
+      endereco: {
+        cep: "01310100",
+        logradouro: "Avenida Paulista",
+        numero: "1000",
+        complemento: "Loja 1",
+        bairro: "Bela Vista",
+        cidade: "São Paulo",
+        uf: "SP",
+      },
     },
     {
       cnpj: "12ABC34501DE35",
       razaoSocial: "Mercado Demo Norte Ltda",
       nomeFantasia: "Mercado Demo Norte",
+      endereco: {
+        cep: "02012000",
+        logradouro: "Rua Voluntários da Pátria",
+        numero: "S/N",
+        complemento: null,
+        bairro: "Santana",
+        cidade: "São Paulo",
+        uf: "SP",
+      },
     },
   ],
   senhaUsuarios: "Demo#Senha2026",
@@ -64,10 +88,19 @@ export async function executarSeedDev(ctx: INestApplicationContext): Promise<Res
       senhaHash: hashEquipe,
       senhaTemporaria: false,
     });
-    const [cliente] = await tx.insert(schema.clientes).values({ nome: SEED.cliente }).returning();
+    const [cliente] = await tx
+      .insert(schema.clientes)
+      .values({ nome: SEED.cliente, ...colunasDoResponsavel(SEED.responsavel) })
+      .returning();
     const empresas = await tx
       .insert(schema.empresas)
-      .values(SEED.empresas.map((e) => ({ ...e, tenantId: cliente!.id })))
+      .values(
+        SEED.empresas.map(({ endereco, ...e }) => ({
+          ...e,
+          ...colunasDoEndereco(endereco),
+          tenantId: cliente!.id,
+        })),
+      )
       .returning();
     for (const u of SEED.usuarios) {
       const [usuario] = await tx

@@ -3,18 +3,10 @@ import { and, asc, eq, inArray, schema } from "@super-pdv/db";
 import type { Empresa } from "@super-pdv/shared";
 import { UsuarioAtual } from "../auth/decoradores";
 import { escopoDeEmpresas, RequerPermissao } from "../auth/permissoes";
+import { comoEmpresa } from "../comum/cadastro";
 import { naoEncontrado, semPermissao } from "../comum/erros";
 import type { UsuarioAutenticado } from "../contexto/contexto";
 import { TenantDb } from "../database/tenant-db";
-
-const comoEmpresa = (e: typeof schema.empresas.$inferSelect): Empresa => ({
-  id: e.id,
-  clienteId: e.tenantId,
-  cnpj: e.cnpj,
-  razaoSocial: e.razaoSocial,
-  nomeFantasia: e.nomeFantasia,
-  ativa: e.ativa,
-});
 
 const SO_EQUIPE = "Empresas são cadastradas e alteradas pela equipe Super PDV";
 

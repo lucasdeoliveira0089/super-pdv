@@ -11,21 +11,21 @@ import {
   normalizarCnpj,
 } from "@super-pdv/shared";
 import { AuthCore } from "../auth/auth-core.service";
+import {
+  colunasDoEndereco,
+  colunasDoResponsavel,
+  comoEmpresa,
+  comoResponsavel,
+} from "../comum/cadastro";
 import { gerarSenhaTemporaria, hashSenha } from "../auth/senhas";
 import { conflito, naoEncontrado, regraDeNegocio } from "../comum/erros";
 import { violouUnicidade } from "../comum/pg";
 import { SystemDb, type Transacao } from "../database/system-db";
 
-type LinhaEmpresa = typeof schema.empresas.$inferSelect;
-
-const comoEmpresa = (e: LinhaEmpresa): Empresa => ({
-  id: e.id,
-  clienteId: e.tenantId,
-  cnpj: e.cnpj,
-  razaoSocial: e.razaoSocial,
-  nomeFantasia: e.nomeFantasia,
-  ativa: e.ativa,
-});
+/** Linha de `empresas` a partir da empresa já validada. */
+function colunasDaEmpresa(tenantId: string, { endereco, ...empresa }: EmpresaCriar) {
+  return { tenantId, ...empresa, ...colunasDoEndereco(endereco) };
+}
 
 /** Traduz violações de unicidade em 409 no campo correspondente. */
 function traduzirConflitos(erro: unknown, prefixo = ""): never {
@@ -54,8 +54,15 @@ export class ClientesService {
     const senhaHash = await hashSenha(senhaTemporaria);
     try {
       const clienteId = await this.system.transacao(async (tx) => {
-        const [cliente] = await tx.insert(schema.clientes).values({ nome: dados.nome }).returning();
-        await tx.insert(schema.empresas).values({ tenantId: cliente!.id, ...dados.empresa });
+        // O nome do cliente é o nome fantasia da primeira empresa (spec client-provisioning).
+        const [cliente] = await tx
+          .insert(schema.clientes)
+          .values({
+            nome: dados.empresa.nomeFantasia,
+            ...colunasDoResponsavel(dados.responsavel),
+          })
+          .returning();
+        await tx.insert(schema.empresas).values(colunasDaEmpresa(cliente!.id, dados.empresa));
         await tx.insert(schema.usuarios).values({
           tenantId: cliente!.id,
           nome: dados.dono.nome,
@@ -109,10 +116,11 @@ export class ClientesService {
   }
 
   async atualizar(id: string, dados: ClienteAtualizar): Promise<Cliente> {
+    const { responsavel, ...demais } = dados;
     await this.system.transacao(async (tx) => {
       const [cliente] = await tx
         .update(schema.clientes)
-        .set(dados)
+        .set({ ...demais, ...(responsavel && colunasDoResponsavel(responsavel)) })
         .where(eq(schema.clientes.id, id))
         .returning();
       if (!cliente) throw naoEncontrado("Cliente não encontrado");
@@ -134,7 +142,7 @@ export class ClientesService {
     try {
       const [empresa] = await this.system.db
         .insert(schema.empresas)
-        .values({ tenantId: clienteId, ...dados })
+        .values(colunasDaEmpresa(clienteId, dados))
         .returning();
       return comoEmpresa(empresa!);
     } catch (erro) {
@@ -143,9 +151,10 @@ export class ClientesService {
   }
 
   async atualizarEmpresa(id: string, dados: EmpresaAtualizar): Promise<Empresa> {
+    const { endereco, ...demais } = dados;
     const [empresa] = await this.system.db
       .update(schema.empresas)
-      .set(dados)
+      .set({ ...demais, ...(endereco && colunasDoEndereco(endereco)) })
       .where(eq(schema.empresas.id, id))
       .returning();
     if (!empresa) throw naoEncontrado("Empresa não encontrada");
@@ -191,6 +200,7 @@ export class ClientesService {
       id: c.id,
       nome: c.nome,
       ativo: c.ativo,
+      responsavel: comoResponsavel(c),
       empresas: empresas.filter((e) => e.tenantId === c.id).map(comoEmpresa),
       donos: donos
         .filter((d) => d.tenantId === c.id)

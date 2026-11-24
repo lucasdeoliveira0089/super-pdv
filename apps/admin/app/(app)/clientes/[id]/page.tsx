@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { clienteSchema } from "@super-pdv/shared";
+import { clienteSchema, formatarCelular } from "@super-pdv/shared";
 import { Badge } from "@super-pdv/ui/components/badge";
 import { Button } from "@super-pdv/ui/components/button";
 import { BotaoEnviar } from "@super-pdv/ui/components/formulario-cliente";
@@ -32,6 +32,33 @@ export default async function ClientePage({ params }: { params: Promise<{ id: st
           </form>
         }
       />
+
+      <section className="mb-8" aria-labelledby="titulo-responsavel">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 id="titulo-responsavel" className="font-semibold">
+            Responsável
+          </h2>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/clientes/${cliente.id}/responsavel`}>
+              {cliente.responsavel ? "Editar responsável" : "Cadastrar responsável"}
+            </Link>
+          </Button>
+        </div>
+        {cliente.responsavel ? (
+          <dl className="grid gap-x-6 gap-y-1 rounded-lg border p-3 text-sm sm:grid-cols-[auto_1fr]">
+            <dt className="text-muted-foreground">Nome</dt>
+            <dd className="font-medium">{cliente.responsavel.nome}</dd>
+            <dt className="text-muted-foreground">Celular</dt>
+            <dd>{formatarCelular(cliente.responsavel.celular)}</dd>
+            <dt className="text-muted-foreground">E-mail</dt>
+            <dd>{cliente.responsavel.email}</dd>
+          </dl>
+        ) : (
+          <p className="text-muted-foreground rounded-lg border border-dashed p-3 text-sm">
+            Responsável não cadastrado.
+          </p>
+        )}
+      </section>
 
       <section className="mb-8">
         <div className="mb-2 flex items-center justify-between">

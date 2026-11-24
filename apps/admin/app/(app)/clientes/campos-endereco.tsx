@@ -1,0 +1,217 @@
+"use client";
+
+import { type Endereco, formatarCep, normalizarCep, UFS } from "@super-pdv/shared";
+import { CampoSelecao, CampoTexto } from "@super-pdv/ui/components/campos";
+import {
+  FieldDescription,
+  FieldGroup,
+  FieldLegend,
+  FieldSet,
+} from "@super-pdv/ui/components/field";
+import { useEffect, useReducer, useRef, useState } from "react";
+
+type Campo = "cep" | "logradouro" | "numero" | "complemento" | "bairro" | "cidade" | "uf";
+type Valores = Record<Campo, string>;
+/** Campos que a busca por CEP preenche. */
+type CampoDoCep = "logradouro" | "bairro" | "cidade" | "uf";
+
+const VAZIO: Valores = {
+  cep: "",
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  cidade: "",
+  uf: "",
+};
+
+const AVISOS = {
+  buscando: "Buscando o endereço…",
+  encontrado: "Endereço preenchido pelo CEP. Confira e informe o número.",
+  nao_encontrado: "CEP não encontrado. Preencha o endereço.",
+  falha: "Não foi possível buscar o endereço. Preencha à mão.",
+} as const;
+
+/** Valores iniciais a partir do endereço salvo (com máscara no CEP). */
+export function valoresDoEndereco(e: Endereco | null | undefined): Partial<Valores> {
+  if (!e) return {};
+  return { ...e, cep: formatarCep(e.cep), complemento: e.complemento ?? "" };
+}
+
+/**
+ * Campos de endereço de uma empresa. Ao completar 8 dígitos no CEP, consulta
+ * `/api/cep` e preenche logradouro, bairro, cidade e UF — sem sobrescrever o
+ * que a equipe já digitou — e leva o foco para o número. Se a busca falhar,
+ * os campos seguem livres para preenchimento manual.
+ *
+ * Os valores vão no FormData com os nomes `cep`, `logradouro`, `numero`, etc.
+ */
+export function CamposEndereco({
+  valores,
+  erros,
+  legenda = "Endereço da empresa",
+}: {
+  valores?: Partial<Valores>;
+  /** Erros por campo do endereço (chaves `cep`, `logradouro`...). */
+  erros?: Partial<Record<Campo, string[]>>;
+  legenda?: string;
+}) {
+  const [v, setV] = useState<Valores>({ ...VAZIO, ...valores });
+  const [aviso, setAviso] = useState<keyof typeof AVISOS | null>(null);
+  // Campos que a equipe editou à mão: a busca por CEP não os sobrescreve.
+  const editados = useRef(new Set<Campo>());
+  const ultimoCep = useRef(normalizarCep(valores?.cep ?? ""));
+  const numero = useRef<HTMLInputElement>(null);
+  const grupo = useRef<HTMLFieldSetElement>(null);
+
+  // Depois de cada envio, o React 19 chama `form.reset()`. Inputs controlados
+  // resistem (o React sincroniza o atributo value), mas o <select> da UF volta à
+  // primeira opção: uma nova renderização reaplica a opção do estado. O evento
+  // "reset" dispara antes de o formulário ser limpo, daí o setTimeout.
+  const [, renderizar] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    const form = grupo.current?.form;
+    if (!form) return;
+    const aoLimpar = () => setTimeout(renderizar, 0);
+    form.addEventListener("reset", aoLimpar);
+    return () => form.removeEventListener("reset", aoLimpar);
+  }, []);
+
+  /** Edição manual: o campo vem do `name` do input. */
+  function aoMudar(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const campo = e.target.name as Campo;
+    editados.current.add(campo);
+    setV((atual) => ({ ...atual, [campo]: e.target.value }));
+  }
+
+  async function buscar(cep: string) {
+    setAviso("buscando");
+    let resposta: Response;
+    try {
+      resposta = await fetch(`/api/cep/${cep}`, { cache: "no-store" });
+    } catch {
+      setAviso("falha");
+      return;
+    }
+    if (resposta.status === 404) return setAviso("nao_encontrado");
+    if (!resposta.ok) return setAviso("falha");
+    const achado = (await resposta.json()) as Record<CampoDoCep, string>;
+    setV((atual) => {
+      const novo = { ...atual };
+      for (const campo of ["logradouro", "bairro", "cidade", "uf"] as const) {
+        const podeTrocar = !editados.current.has(campo) || !atual[campo].trim();
+        if (podeTrocar && achado[campo]) novo[campo] = achado[campo];
+      }
+      return novo;
+    });
+    setAviso("encontrado");
+    numero.current?.focus();
+  }
+
+  function mudarCep(e: React.ChangeEvent<HTMLInputElement>) {
+    const texto = e.target.value;
+    setV((atual) => ({ ...atual, cep: texto }));
+    const digitos = normalizarCep(texto);
+    if (digitos.length !== 8) {
+      ultimoCep.current = "";
+      setAviso(null);
+      return;
+    }
+    if (digitos === ultimoCep.current) return;
+    ultimoCep.current = digitos;
+    void buscar(digitos);
+  }
+
+  return (
+    <FieldSet ref={grupo}>
+      <FieldLegend>{legenda}</FieldLegend>
+      <FieldGroup>
+        <div className="grid gap-1">
+          <CampoTexto
+            name="cep"
+            rotulo="CEP"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            maxLength={9}
+            className="sm:w-40"
+            value={v.cep}
+            onChange={mudarCep}
+            onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
+            erros={erros?.cep}
+          />
+          <FieldDescription role="status" aria-live="polite">
+            {aviso ? AVISOS[aviso] : "Ao informar o CEP, o endereço é preenchido automaticamente."}
+          </FieldDescription>
+        </div>
+        <CampoTexto
+          name="logradouro"
+          rotulo="Logradouro"
+          autoComplete="address-line1"
+          value={v.logradouro}
+          onChange={aoMudar}
+          erros={erros?.logradouro}
+        />
+        <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
+          <CampoTexto
+            ref={numero}
+            name="numero"
+            rotulo="Número"
+            descricao='Use "S/N" se não houver.'
+            value={v.numero}
+            onChange={aoMudar}
+            erros={erros?.numero}
+          />
+          <CampoTexto
+            name="complemento"
+            rotulo="Complemento (opcional)"
+            autoComplete="address-line2"
+            value={v.complemento}
+            onChange={aoMudar}
+            erros={erros?.complemento}
+          />
+        </div>
+        <CampoTexto
+          name="bairro"
+          rotulo="Bairro"
+          value={v.bairro}
+          onChange={aoMudar}
+          erros={erros?.bairro}
+        />
+        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+          <CampoTexto
+            name="cidade"
+            rotulo="Cidade"
+            autoComplete="address-level2"
+            value={v.cidade}
+            onChange={aoMudar}
+            erros={erros?.cidade}
+          />
+          <CampoSelecao
+            name="uf"
+            rotulo="UF"
+            value={v.uf}
+            onChange={aoMudar}
+            erros={erros?.uf}
+            opcoes={[
+              { valor: "", rotulo: "Selecione" },
+              ...UFS.map((uf) => ({ valor: uf, rotulo: uf })),
+            ]}
+          />
+        </div>
+      </FieldGroup>
+    </FieldSet>
+  );
+}
+
+/** Erros de endereço do formulário a partir das chaves da API/zod (ex.: `empresa.endereco.cep`). */
+export function errosDoEndereco(
+  campos: Record<string, string[]> | undefined,
+  prefixo: string,
+): Partial<Record<Campo, string[]>> {
+  const saida: Partial<Record<Campo, string[]>> = {};
+  for (const campo of Object.keys(VAZIO) as Campo[]) {
+    const e = campos?.[`${prefixo}${campo}`];
+    if (e) saida[campo] = e;
+  }
+  return saida;
+}

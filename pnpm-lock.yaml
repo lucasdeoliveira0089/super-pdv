@@ -227,6 +227,9 @@ importers:
       '@super-pdv/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@super-pdv/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@tailwindcss/postcss':
         specifier: ^4.3.5
         version: 4.3.5

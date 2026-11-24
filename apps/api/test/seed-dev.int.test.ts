@@ -1,4 +1,4 @@
-import { meResponseSchema } from "@super-pdv/shared";
+import { clienteSchema, meResponseSchema } from "@super-pdv/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { executarSeedDev, SEED } from "../src/cli/seed-dev";
 import { type AppDeTeste, bearer, criarAppDeTeste } from "./app-de-teste";
@@ -19,7 +19,22 @@ describe("comando seed:dev", () => {
     expect(r.codigo).toBe(0);
     expect(r.saida).toContain(SEED.equipe.email);
 
-    await t.entrar(SEED.equipe.email, SEED.equipe.senha, "equipe");
+    const equipe = await t.entrar(SEED.equipe.email, SEED.equipe.senha, "equipe");
+    const [cliente] = clienteSchema
+      .array()
+      .parse(
+        (
+          await t
+            .http()
+            .get("/v1/admin/clientes")
+            .query({ busca: SEED.cliente })
+            .set(bearer(equipe))
+            .expect(200)
+        ).body,
+      );
+    expect(cliente?.responsavel).toEqual(SEED.responsavel);
+    expect(cliente?.empresas.map((e) => e.endereco?.cep).sort()).toEqual(["01310100", "02012000"]);
+
     const papeis = [];
     for (const u of SEED.usuarios) {
       const me = meResponseSchema.parse(

@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3001;
+/** Serviço de CEP falso (e2e/cep-falso.mjs): nenhum teste acessa o ViaCEP real. */
+const PORTA_CEP = 3901;
 
 // E2E contra a API e o banco reais. Pré-requisito: `pnpm db:up` (PostgreSQL + Mailpit).
 // O global-setup aplica as migrations e os dados de demonstração (pnpm db:seed).
@@ -28,12 +30,18 @@ export default defineConfig({
       env: { LIMITE_AUTH_POR_MINUTO: "1000" },
     },
     {
+      command: "node e2e/cep-falso.mjs",
+      url: `http://localhost:${PORTA_CEP}/saude`,
+      reuseExistingServer: !process.env.CI,
+      env: { PORTA: String(PORTA_CEP) },
+    },
+    {
       // Build de produção (`next build` é executado antes pelo Turborepo).
       command: "pnpm start",
       port: PORT,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      env: { API_URL: "http://localhost:3333" },
+      env: { API_URL: "http://localhost:3333", CEP_API_URL: `http://localhost:${PORTA_CEP}/ws` },
     },
   ],
 });
