@@ -96,9 +96,15 @@ test.describe("clientes e empresas", () => {
     await expect(page.getByLabel("Logradouro")).toHaveValue("Avenida Paulista");
     await expect(page.getByLabel("Número")).toBeFocused();
     await page.getByLabel("Número").fill("1000");
-    await page.getByLabel("Nome do responsável").fill("Maria E2E");
+    await page
+      .getByRole("region", { name: "Responsável" })
+      .getByRole("textbox", { name: "Nome", exact: true })
+      .fill("Maria E2E");
     await page.getByLabel("Celular").fill("11987654321");
-    await page.getByLabel("E-mail do responsável").fill(`maria.${unico()}@e2e.local`);
+    await page
+      .getByRole("region", { name: "Responsável" })
+      .getByRole("textbox", { name: "E-mail", exact: true })
+      .fill(`maria.${unico()}@e2e.local`);
   }
 
   /** Cadastra um cliente pelo admin e abre o detalhe; devolve o id do cliente. */
@@ -152,7 +158,11 @@ test.describe("clientes e empresas", () => {
     await expect(localizacao.getByLabel("Número")).toHaveAttribute("aria-invalid", "true");
     // Tudo o que foi digitado continua no formulário após o erro.
     await expect(page.getByLabel("Celular")).toHaveValue("(11) 34567-890");
-    await expect(page.getByLabel("Nome do responsável")).toHaveValue("Maria E2E");
+    await expect(
+      page
+        .getByRole("region", { name: "Responsável" })
+        .getByRole("textbox", { name: "Nome", exact: true }),
+    ).toHaveValue("Maria E2E");
     await expect(page.getByLabel("Logradouro")).toHaveValue("Avenida Paulista");
     await expect(page.getByLabel("UF")).toHaveValue("SP");
 

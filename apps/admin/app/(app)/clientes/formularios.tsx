@@ -59,7 +59,7 @@ export function FormNovoCliente() {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <CampoTexto
             name="responsavelNome"
-            rotulo="Nome do responsável"
+            rotulo="Nome"
             obrigatorio
             autoComplete="name"
             defaultValue={v?.responsavelNome}
@@ -73,7 +73,7 @@ export function FormNovoCliente() {
           />
           <CampoTexto
             name="responsavelEmail"
-            rotulo="E-mail do responsável"
+            rotulo="E-mail"
             obrigatorio
             type="email"
             autoComplete="email"
@@ -166,7 +166,7 @@ export function FormResponsavel({
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <CampoTexto
             name="nome"
-            rotulo="Nome do responsável"
+            rotulo="Nome"
             autoFocus
             autoComplete="name"
             defaultValue={v?.nome ?? responsavel?.nome}
@@ -181,7 +181,7 @@ export function FormResponsavel({
           />
           <CampoTexto
             name="email"
-            rotulo="E-mail do responsável"
+            rotulo="E-mail"
             type="email"
             autoComplete="email"
             defaultValue={v?.email ?? responsavel?.email}
