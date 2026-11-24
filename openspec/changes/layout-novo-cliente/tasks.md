@@ -49,6 +49,10 @@
 
 - [x] 10.1 Remover de `CamposEndereco` as mensagens da busca por CEP (buscando, encontrado, não encontrado e falha), mantendo o preenchimento automático e o preenchimento manual quando a busca falha. Verificar com o E2E de empresas: CEP desconhecido e serviço fora do ar não mostram mensagem e o endereço é salvo à mão.
 
+## 11. Lista de clientes sem a coluna Dono
+
+- [x] 11.1 Remover a coluna "Dono" da tabela de clientes do admin (e do menu "Colunas"). Verificar com o E2E de largura: os cabeçalhos da tabela são Cliente, Empresas e Situação.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

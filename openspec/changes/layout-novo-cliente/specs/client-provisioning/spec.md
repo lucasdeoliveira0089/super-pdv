@@ -26,6 +26,17 @@ Membros da equipe SHALL cadastrar um cliente informando a primeira empresa (CNPJ
 - **WHEN** a equipe cadastra, no detalhe do cliente, um Dono com e-mail que já pertence a um usuário de qualquer cliente
 - **THEN** o cadastro do Dono é recusado informando que o e-mail já está em uso, junto ao campo
 
+### Requirement: Listagem e consulta de clientes
+Membros da equipe SHALL listar e buscar clientes por nome ou CNPJ de suas empresas. A lista SHALL mostrar de cada cliente as empresas e a situação, sem a coluna de Dono; os usuários Dono aparecem no detalhe do cliente.
+
+#### Scenario: Busca por CNPJ
+- **WHEN** a equipe busca pelo CNPJ de uma das empresas do "Grupo Silva"
+- **THEN** o "Grupo Silva" aparece no resultado
+
+#### Scenario: Colunas da lista
+- **WHEN** a equipe abre a lista de clientes
+- **THEN** as colunas são Cliente, Empresas e Situação, e os Donos de cada cliente são vistos no detalhe
+
 ## ADDED Requirements
 
 ### Requirement: Cadastro do Dono pelo admin

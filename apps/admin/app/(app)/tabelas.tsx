@@ -44,10 +44,6 @@ const colunasClientes = cc.columns([
       </div>
     ),
   }),
-  cc.accessor((c) => c.donos.map((d) => d.email).join(", "), {
-    id: "donos",
-    header: "Dono",
-  }),
   cc.accessor("ativo", {
     header: "Situação",
     cell: ({ row }) => situacao(row.original.ativo, "Ativo", "Suspenso", true),
@@ -61,7 +57,7 @@ export function TabelaClientes({ clientes }: { clientes: Cliente[] }) {
       colunas={colunasClientes}
       dados={clientes}
       idDaLinha={(c) => c.id}
-      rotulos={{ nome: "Cliente", empresas: "Empresas", donos: "Dono", ativo: "Situação" }}
+      rotulos={{ nome: "Cliente", empresas: "Empresas", ativo: "Situação" }}
       ordenacaoInicial={[{ id: "nome", desc: false }]}
       nomeItens="clientes"
       vazio="Nenhum cliente encontrado."

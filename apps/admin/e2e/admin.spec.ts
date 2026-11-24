@@ -351,6 +351,10 @@ test.describe("largura do conteúdo", () => {
   }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await entrarComoEquipe(page);
+    // Colunas da lista: sem Dono (os Donos ficam no detalhe do cliente).
+    await expect(
+      page.getByRole("table", { name: "Clientes" }).getByRole("columnheader"),
+    ).toHaveText([/^Cliente/, /^Empresas/, /^Situação/]);
     const lista = await medir(page, page.getByRole("table", { name: "Clientes" }));
     expect(lista.largura).toBeLessThanOrEqual(1280);
     expect(lista.largura).toBeGreaterThan(1200);
