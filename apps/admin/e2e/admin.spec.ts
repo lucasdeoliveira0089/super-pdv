@@ -12,6 +12,20 @@ import {
   unico,
 } from "./util";
 
+test.describe("tema", () => {
+  test.use({ colorScheme: "dark" });
+
+  test("admin abre claro mesmo com o sistema no modo escuro e tema escuro salvo", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => localStorage.setItem("theme", "dark"));
+    await entrarComoEquipe(page);
+    const html = page.locator("html");
+    await expect(html).toHaveClass(/\blight\b/);
+    await expect(html).not.toHaveClass(/\bdark\b/);
+  });
+});
+
 test.describe("autenticação no admin", () => {
   test("página interna sem login leva ao login e volta à página pedida", async ({ page }) => {
     await page.goto("/equipe");
@@ -114,8 +128,20 @@ test.describe("clientes e empresas", () => {
     await page.getByRole("link", { name: "Novo cliente" }).click();
     await expect(page.getByLabel("Nome do cliente")).toHaveCount(0);
 
-    // Preenche tudo, mas com CNPJ inválido e um telefone fixo como celular.
+    // Cartões na ordem certa; obrigatórios anunciados, complemento opcional.
+    await expect(page.getByRole("heading", { level: 2 })).toHaveText([
+      "Empresa",
+      "Localização",
+      "Responsável",
+      "Dono",
+    ]);
+    const localizacao = page.getByRole("region", { name: "Localização" });
+    await expect(localizacao.getByLabel("CEP")).toHaveAttribute("aria-required", "true");
+    await expect(localizacao.getByLabel("Complemento")).not.toHaveAttribute("aria-required");
+
+    // Preenche tudo, mas com CNPJ inválido, sem o número e um telefone fixo como celular.
     await preencherNovoCliente(page, fantasia, "11.222.333/0001-82");
+    await page.getByLabel("Número").fill("");
     await expect(page.getByLabel("Cidade")).toHaveValue("São Paulo");
     await expect(page.getByLabel("UF")).toHaveValue("SP");
     await page.getByLabel("Celular").fill("(11) 3456-7890");
@@ -123,6 +149,9 @@ test.describe("clientes e empresas", () => {
     await expect(page.getByLabel("CNPJ")).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByText("CNPJ inválido")).toBeVisible();
     await expect(page.getByLabel("Celular")).toHaveAttribute("aria-invalid", "true");
+    // O erro do número aparece dentro do cartão "Localização".
+    await expect(localizacao.getByText("Informe o número", { exact: true })).toBeVisible();
+    await expect(localizacao.getByLabel("Número")).toHaveAttribute("aria-invalid", "true");
     // Tudo o que foi digitado continua no formulário após o erro.
     await expect(page.getByLabel("Celular")).toHaveValue("(11) 3456-7890");
     await expect(page.getByLabel("Nome do responsável")).toHaveValue("Maria E2E");
@@ -130,6 +159,7 @@ test.describe("clientes e empresas", () => {
     await expect(page.getByLabel("UF")).toHaveValue("SP");
 
     await page.getByLabel("CNPJ").fill(cnpj);
+    await page.getByLabel("Número").fill("1000");
     await page.getByLabel("Celular").fill("(11) 98765-4321");
     await page.getByRole("button", { name: "Cadastrar cliente" }).click();
     await expect(page.getByTestId("senha-temporaria")).toContainText(
@@ -248,5 +278,23 @@ test.describe("clientes e empresas", () => {
         name: "Rua da Assembleia, 10 — Rio de Janeiro/RJ · 20040-002",
       }),
     ).toBeVisible();
+  });
+
+  test("novo cliente no celular: cartões em uma coluna, sem rolagem horizontal", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await entrarComoEquipe(page);
+    await page.goto("/clientes/novo");
+    await expect(page.getByRole("region", { name: "Localização" })).toBeVisible();
+    const rolagem = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(rolagem).toBe(0);
+    const caixa = (nome: string) => page.getByRole("region", { name: nome }).boundingBox();
+    const [empresa, local] = [await caixa("Empresa"), await caixa("Localização")];
+    // Um cartão abaixo do outro, com a mesma largura.
+    expect(local!.y).toBeGreaterThan(empresa!.y + empresa!.height - 1);
+    expect(Math.round(local!.width)).toBe(Math.round(empresa!.width));
   });
 });

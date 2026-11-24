@@ -157,7 +157,7 @@ pnpm --filter @super-pdv/gestor build
 pnpm --filter @super-pdv/gestor test:e2e # Playwright contra o build de produção
 ```
 
-Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`.
+Na primeira execução dos testes E2E, instale o navegador do Playwright: `pnpm --filter @super-pdv/gestor exec playwright install chromium`. Os E2E do admin sobem o admin na porta 3101 (com um serviço de CEP falso na 3901), para não reaproveitar o admin de desenvolvimento da 3001.
 
 ### Cadastro de cliente no admin
 

@@ -8,6 +8,7 @@ import {
   FieldLegend,
   FieldSet,
 } from "@super-pdv/ui/components/field";
+import { SecaoFormulario } from "@super-pdv/ui/components/secao-formulario";
 import { useEffect, useReducer, useRef, useState } from "react";
 
 type Campo = "cep" | "logradouro" | "numero" | "complemento" | "bairro" | "cidade" | "uf";
@@ -50,11 +51,15 @@ export function CamposEndereco({
   valores,
   erros,
   legenda = "Endereço da empresa",
+  cartao = false,
 }: {
   valores?: Partial<Valores>;
   /** Erros por campo do endereço (chaves `cep`, `logradouro`...). */
   erros?: Partial<Record<Campo, string[]>>;
+  /** Legenda da apresentação em fieldset (ignorada no cartão). */
   legenda?: string;
+  /** Apresenta em cartão "Localização", com os campos obrigatórios marcados. */
+  cartao?: boolean;
 }) {
   const [v, setV] = useState<Valores>({ ...VAZIO, ...valores });
   const [aviso, setAviso] = useState<keyof typeof AVISOS | null>(null);
@@ -62,7 +67,8 @@ export function CamposEndereco({
   const editados = useRef(new Set<Campo>());
   const ultimoCep = useRef(normalizarCep(valores?.cep ?? ""));
   const numero = useRef<HTMLInputElement>(null);
-  const grupo = useRef<HTMLFieldSetElement>(null);
+  // Elemento comum às duas apresentações, para achar o formulário.
+  const grupo = useRef<HTMLDivElement>(null);
 
   // Depois de cada envio, o React 19 chama `form.reset()`. Inputs controlados
   // resistem (o React sincroniza o atributo value), mas o <select> da UF volta à
@@ -70,7 +76,7 @@ export function CamposEndereco({
   // "reset" dispara antes de o formulário ser limpo, daí o setTimeout.
   const [, renderizar] = useReducer((n: number) => n + 1, 0);
   useEffect(() => {
-    const form = grupo.current?.form;
+    const form = grupo.current?.closest("form");
     if (!form) return;
     const aoLimpar = () => setTimeout(renderizar, 0);
     form.addEventListener("reset", aoLimpar);
@@ -122,83 +128,105 @@ export function CamposEndereco({
     void buscar(digitos);
   }
 
+  // No cartão, os obrigatórios ganham asterisco e o complemento dispensa o "(opcional)".
+  const obrigatorio = cartao;
+  const campos = (
+    <div ref={grupo} className="contents">
+      <div className="grid gap-1">
+        <CampoTexto
+          name="cep"
+          rotulo="CEP"
+          obrigatorio={obrigatorio}
+          inputMode="numeric"
+          autoComplete="postal-code"
+          maxLength={9}
+          className="sm:w-40"
+          value={v.cep}
+          onChange={mudarCep}
+          onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
+          erros={erros?.cep}
+        />
+        <FieldDescription role="status" aria-live="polite">
+          {aviso ? AVISOS[aviso] : "Ao informar o CEP, o endereço é preenchido automaticamente."}
+        </FieldDescription>
+      </div>
+      <CampoTexto
+        name="logradouro"
+        rotulo="Logradouro"
+        obrigatorio={obrigatorio}
+        autoComplete="address-line1"
+        value={v.logradouro}
+        onChange={aoMudar}
+        erros={erros?.logradouro}
+      />
+      <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
+        <CampoTexto
+          ref={numero}
+          name="numero"
+          rotulo="Número"
+          obrigatorio={obrigatorio}
+          descricao='Use "S/N" se não houver.'
+          value={v.numero}
+          onChange={aoMudar}
+          erros={erros?.numero}
+        />
+        <CampoTexto
+          name="complemento"
+          rotulo={cartao ? "Complemento" : "Complemento (opcional)"}
+          autoComplete="address-line2"
+          value={v.complemento}
+          onChange={aoMudar}
+          erros={erros?.complemento}
+        />
+      </div>
+      <CampoTexto
+        name="bairro"
+        rotulo="Bairro"
+        obrigatorio={obrigatorio}
+        value={v.bairro}
+        onChange={aoMudar}
+        erros={erros?.bairro}
+      />
+      <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+        <CampoTexto
+          name="cidade"
+          rotulo="Cidade"
+          obrigatorio={obrigatorio}
+          autoComplete="address-level2"
+          value={v.cidade}
+          onChange={aoMudar}
+          erros={erros?.cidade}
+        />
+        <CampoSelecao
+          name="uf"
+          rotulo="UF"
+          obrigatorio={obrigatorio}
+          value={v.uf}
+          onChange={aoMudar}
+          erros={erros?.uf}
+          opcoes={[
+            { valor: "", rotulo: "Selecione" },
+            ...UFS.map((uf) => ({ valor: uf, rotulo: uf })),
+          ]}
+        />
+      </div>
+    </div>
+  );
+
+  if (cartao) {
+    return (
+      <SecaoFormulario
+        titulo="Localização"
+        descricao="Endereço do estabelecimento. Informe o CEP para preencher o restante."
+      >
+        {campos}
+      </SecaoFormulario>
+    );
+  }
   return (
-    <FieldSet ref={grupo}>
+    <FieldSet>
       <FieldLegend>{legenda}</FieldLegend>
-      <FieldGroup>
-        <div className="grid gap-1">
-          <CampoTexto
-            name="cep"
-            rotulo="CEP"
-            inputMode="numeric"
-            autoComplete="postal-code"
-            maxLength={9}
-            className="sm:w-40"
-            value={v.cep}
-            onChange={mudarCep}
-            onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
-            erros={erros?.cep}
-          />
-          <FieldDescription role="status" aria-live="polite">
-            {aviso ? AVISOS[aviso] : "Ao informar o CEP, o endereço é preenchido automaticamente."}
-          </FieldDescription>
-        </div>
-        <CampoTexto
-          name="logradouro"
-          rotulo="Logradouro"
-          autoComplete="address-line1"
-          value={v.logradouro}
-          onChange={aoMudar}
-          erros={erros?.logradouro}
-        />
-        <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
-          <CampoTexto
-            ref={numero}
-            name="numero"
-            rotulo="Número"
-            descricao='Use "S/N" se não houver.'
-            value={v.numero}
-            onChange={aoMudar}
-            erros={erros?.numero}
-          />
-          <CampoTexto
-            name="complemento"
-            rotulo="Complemento (opcional)"
-            autoComplete="address-line2"
-            value={v.complemento}
-            onChange={aoMudar}
-            erros={erros?.complemento}
-          />
-        </div>
-        <CampoTexto
-          name="bairro"
-          rotulo="Bairro"
-          value={v.bairro}
-          onChange={aoMudar}
-          erros={erros?.bairro}
-        />
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
-          <CampoTexto
-            name="cidade"
-            rotulo="Cidade"
-            autoComplete="address-level2"
-            value={v.cidade}
-            onChange={aoMudar}
-            erros={erros?.cidade}
-          />
-          <CampoSelecao
-            name="uf"
-            rotulo="UF"
-            value={v.uf}
-            onChange={aoMudar}
-            erros={erros?.uf}
-            opcoes={[
-              { valor: "", rotulo: "Selecione" },
-              ...UFS.map((uf) => ({ valor: uf, rotulo: uf })),
-            ]}
-          />
-        </div>
-      </FieldGroup>
+      <FieldGroup>{campos}</FieldGroup>
     </FieldSet>
   );
 }

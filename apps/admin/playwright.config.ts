@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 3001;
+// Porta própria dos E2E (o admin de desenvolvimento usa a 3001): os testes nunca
+// reaproveitam um admin iniciado sem a configuração deles (ex.: sem o CEP falso).
+const PORT = 3101;
 /** Serviço de CEP falso (e2e/cep-falso.mjs): nenhum teste acessa o ViaCEP real. */
 const PORTA_CEP = 3901;
 
@@ -37,7 +39,7 @@ export default defineConfig({
     },
     {
       // Build de produção (`next build` é executado antes pelo Turborepo).
-      command: "pnpm start",
+      command: `pnpm exec next start --port ${PORT}`,
       port: PORT,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

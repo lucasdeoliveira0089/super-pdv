@@ -6,8 +6,9 @@ import { type Empresa, formatarCelular, type Responsavel } from "@super-pdv/shar
 import { Alert, AlertDescription, AlertTitle } from "@super-pdv/ui/components/alert";
 import { Button } from "@super-pdv/ui/components/button";
 import { AlertaErro, CampoSelecao, CampoTexto } from "@super-pdv/ui/components/campos";
-import { FieldGroup, FieldLegend, FieldSet } from "@super-pdv/ui/components/field";
+import { FieldGroup } from "@super-pdv/ui/components/field";
 import { BotaoEnviar, SenhaTemporaria } from "@super-pdv/ui/components/formulario-cliente";
+import { SecaoFormulario } from "@super-pdv/ui/components/secao-formulario";
 import {
   adicionarEmpresa,
   atualizarEmpresa,
@@ -27,6 +28,7 @@ function CampoCelular(props: {
   defaultValue?: string;
   erros?: string[];
   rotulo?: string;
+  obrigatorio?: boolean;
 }) {
   return (
     <CampoTexto
@@ -57,83 +59,97 @@ export function FormNovoCliente() {
   const c = estado?.campos;
   const v = estado?.valores;
   return (
-    <form action={enviar} noValidate className="max-w-xl">
-      <FieldGroup>
-        <AlertaErro mensagem={estado?.mensagem} />
-        <FieldSet>
-          <FieldLegend>Empresa</FieldLegend>
-          <FieldGroup>
-            <CampoTexto
-              name="cnpj"
-              rotulo="CNPJ"
-              descricao="Numérico ou alfanumérico, com ou sem máscara."
-              autoFocus
-              defaultValue={v?.cnpj}
-              erros={c?.["empresa.cnpj"]}
-            />
-            <CampoTexto
-              name="razaoSocial"
-              rotulo="Razão social"
-              defaultValue={v?.razaoSocial}
-              erros={c?.["empresa.razaoSocial"]}
-            />
-            <CampoTexto
-              name="nomeFantasia"
-              rotulo="Nome fantasia"
-              descricao="Também será o nome do cliente."
-              defaultValue={v?.nomeFantasia}
-              erros={c?.["empresa.nomeFantasia"]}
-            />
-          </FieldGroup>
-        </FieldSet>
-        <CamposEndereco valores={v} erros={errosDoEndereco(c, "empresa.endereco.")} />
-        <FieldSet>
-          <FieldLegend>Responsável</FieldLegend>
-          <FieldGroup>
-            <CampoTexto
-              name="responsavelNome"
-              rotulo="Nome do responsável"
-              autoComplete="name"
-              defaultValue={v?.responsavelNome}
-              erros={c?.["responsavel.nome"]}
-            />
-            <CampoCelular
-              name="responsavelCelular"
-              defaultValue={v?.responsavelCelular}
-              erros={c?.["responsavel.celular"]}
-            />
-            <CampoTexto
-              name="responsavelEmail"
-              rotulo="E-mail do responsável"
-              type="email"
-              autoComplete="email"
-              descricao="Contato da equipe Super PDV com o cliente; não dá acesso ao sistema."
-              defaultValue={v?.responsavelEmail}
-              erros={c?.["responsavel.email"]}
-            />
-          </FieldGroup>
-        </FieldSet>
-        <FieldSet>
-          <FieldLegend>Dono</FieldLegend>
-          <FieldGroup>
-            <CampoTexto
-              name="donoNome"
-              rotulo="Nome do Dono"
-              defaultValue={v?.donoNome}
-              erros={c?.["dono.nome"]}
-            />
-            <CampoTexto
-              name="donoEmail"
-              rotulo="E-mail do Dono"
-              type="email"
-              descricao="Login do Dono no gestor e no PDV; recebe a senha temporária."
-              defaultValue={v?.donoEmail}
-              erros={c?.["dono.email"]}
-            />
-          </FieldGroup>
-        </FieldSet>
+    <form action={enviar} noValidate className="grid max-w-3xl gap-6">
+      <AlertaErro mensagem={estado?.mensagem} />
+      <p className="text-muted-foreground text-sm">
+        Campos marcados com <span className="text-destructive">*</span> são obrigatórios.
+      </p>
+      <SecaoFormulario titulo="Empresa" descricao="Dados do primeiro estabelecimento do cliente.">
+        <CampoTexto
+          name="cnpj"
+          rotulo="CNPJ"
+          obrigatorio
+          className="sm:w-64"
+          descricao="Numérico ou alfanumérico, com ou sem máscara."
+          autoFocus
+          defaultValue={v?.cnpj}
+          erros={c?.["empresa.cnpj"]}
+        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <CampoTexto
+            name="razaoSocial"
+            rotulo="Razão social"
+            obrigatorio
+            defaultValue={v?.razaoSocial}
+            erros={c?.["empresa.razaoSocial"]}
+          />
+          <CampoTexto
+            name="nomeFantasia"
+            rotulo="Nome fantasia"
+            obrigatorio
+            descricao="Também será o nome do cliente."
+            defaultValue={v?.nomeFantasia}
+            erros={c?.["empresa.nomeFantasia"]}
+          />
+        </div>
+      </SecaoFormulario>
+      <CamposEndereco cartao valores={v} erros={errosDoEndereco(c, "empresa.endereco.")} />
+      <SecaoFormulario
+        titulo="Responsável"
+        descricao="Contato da equipe Super PDV com o cliente. Não dá acesso ao sistema."
+      >
+        <CampoTexto
+          name="responsavelNome"
+          rotulo="Nome do responsável"
+          obrigatorio
+          autoComplete="name"
+          defaultValue={v?.responsavelNome}
+          erros={c?.["responsavel.nome"]}
+        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <CampoCelular
+            name="responsavelCelular"
+            obrigatorio
+            defaultValue={v?.responsavelCelular}
+            erros={c?.["responsavel.celular"]}
+          />
+          <CampoTexto
+            name="responsavelEmail"
+            rotulo="E-mail do responsável"
+            obrigatorio
+            type="email"
+            autoComplete="email"
+            defaultValue={v?.responsavelEmail}
+            erros={c?.["responsavel.email"]}
+          />
+        </div>
+      </SecaoFormulario>
+      <SecaoFormulario
+        titulo="Dono"
+        descricao="Quem acessa o gestor e o PDV. Recebe uma senha temporária, exibida uma única vez."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <CampoTexto
+            name="donoNome"
+            rotulo="Nome do Dono"
+            obrigatorio
+            defaultValue={v?.donoNome}
+            erros={c?.["dono.nome"]}
+          />
+          <CampoTexto
+            name="donoEmail"
+            rotulo="E-mail do Dono"
+            obrigatorio
+            type="email"
+            descricao="Login no gestor e no PDV."
+            defaultValue={v?.donoEmail}
+            erros={c?.["dono.email"]}
+          />
+        </div>
+      </SecaoFormulario>
+      <div>
         <BotaoEnviar pendente="Cadastrando…">Cadastrar cliente</BotaoEnviar>
-      </FieldGroup>
+      </div>
     </form>
   );
 }
