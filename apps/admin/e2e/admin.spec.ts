@@ -254,18 +254,23 @@ test.describe("clientes e empresas", () => {
     await entrarComoEquipe(page);
     const clienteId = await cadastrarCliente(page, `Empresas E2E ${unico()}`);
 
-    // Serviço de CEP fora do ar e CEP desconhecido: aviso e preenchimento manual.
+    // Serviço de CEP fora do ar e CEP desconhecido: sem mensagens, preenchimento manual.
     const filial = `Filial E2E ${unico()}`;
     await page.getByRole("link", { name: "Nova empresa" }).click();
     await page.getByLabel("CNPJ").fill(gerarCnpj());
     await page.getByLabel("Razão social").fill(`${filial} Ltda`);
     await page.getByLabel("Nome fantasia").fill(filial);
-    await page.getByLabel("CEP").fill("88888-888");
-    await expect(page.getByRole("status")).toHaveText(
-      "Não foi possível buscar o endereço. Preencha à mão.",
-    );
-    await page.getByLabel("CEP").fill("99999-999");
-    await expect(page.getByRole("status")).toHaveText("CEP não encontrado. Preencha o endereço.");
+    for (const [cep, status] of [
+      ["88888-888", 502],
+      ["99999-999", 404],
+    ] as const) {
+      const busca = page.waitForResponse((r) => r.url().includes("/api/cep/"));
+      await page.getByLabel("CEP").fill(cep);
+      expect((await busca).status()).toBe(status);
+      await expect(page.getByLabel("Logradouro")).toHaveValue("");
+    }
+    await expect(page.getByRole("status")).toHaveCount(0);
+    await expect(page.getByText(/CEP não encontrado|Não foi possível buscar/)).toHaveCount(0);
     await page.getByLabel("Logradouro").fill("Rua Manual");
     await page.getByLabel("Número").fill("50");
     await page.getByLabel("Bairro").fill("Centro");

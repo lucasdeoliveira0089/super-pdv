@@ -45,6 +45,10 @@
 - [x] 9.1 Criar `mascararCnpj` em `packages/shared` (máscara progressiva, alfanumérico nas 12 primeiras posições e numérico nos 2 dígitos verificadores) e verificar com testes Vitest: numérico, alfanumérico, minúsculas, letra no dígito verificador, texto colado com máscara e excesso de caracteres.
 - [x] 9.2 Criar o campo de CNPJ com máscara no admin e usá-lo em "Novo cliente" e "Nova empresa". Verificar com um E2E: digitar `12abc34501de35` mostra `12.ABC.345/01DE-35`, e o cadastro continua aceitando o CNPJ.
 
+## 10. Sem mensagens abaixo do CEP
+
+- [x] 10.1 Remover de `CamposEndereco` as mensagens da busca por CEP (buscando, encontrado, não encontrado e falha), mantendo o preenchimento automático e o preenchimento manual quando a busca falha. Verificar com o E2E de empresas: CEP desconhecido e serviço fora do ar não mostram mensagem e o endereço é salvo à mão.
+
 ## Workflow follow-up
 
 - Arquivar a mudança na mesma branch antes do merge, sincronizando a spec `web-layout`.

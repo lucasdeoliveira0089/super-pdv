@@ -2,12 +2,7 @@
 
 import { type Endereco, formatarCep, normalizarCep, UFS } from "@super-pdv/shared";
 import { CampoSelecao, CampoTexto } from "@super-pdv/ui/components/campos";
-import {
-  FieldDescription,
-  FieldGroup,
-  FieldLegend,
-  FieldSet,
-} from "@super-pdv/ui/components/field";
+import { FieldGroup, FieldLegend, FieldSet } from "@super-pdv/ui/components/field";
 import { SecaoFormulario } from "@super-pdv/ui/components/secao-formulario";
 import { useEffect, useReducer, useRef, useState } from "react";
 
@@ -25,13 +20,6 @@ const VAZIO: Valores = {
   cidade: "",
   uf: "",
 };
-
-const AVISOS = {
-  buscando: "Buscando o endereço…",
-  encontrado: "Endereço preenchido pelo CEP. Confira e informe o número.",
-  nao_encontrado: "CEP não encontrado. Preencha o endereço.",
-  falha: "Não foi possível buscar o endereço. Preencha à mão.",
-} as const;
 
 /** Valores iniciais a partir do endereço salvo (com máscara no CEP). */
 export function valoresDoEndereco(e: Endereco | null | undefined): Partial<Valores> {
@@ -62,7 +50,6 @@ export function CamposEndereco({
   cartao?: boolean;
 }) {
   const [v, setV] = useState<Valores>({ ...VAZIO, ...valores });
-  const [aviso, setAviso] = useState<keyof typeof AVISOS | null>(null);
   // Campos que a equipe editou à mão: a busca por CEP não os sobrescreve.
   const editados = useRef(new Set<Campo>());
   const ultimoCep = useRef(normalizarCep(valores?.cep ?? ""));
@@ -90,17 +77,15 @@ export function CamposEndereco({
     setV((atual) => ({ ...atual, [campo]: e.target.value }));
   }
 
+  /** Sem mensagens: se o CEP não for encontrado ou a busca falhar, a equipe preenche à mão. */
   async function buscar(cep: string) {
-    setAviso("buscando");
     let resposta: Response;
     try {
       resposta = await fetch(`/api/cep/${cep}`, { cache: "no-store" });
     } catch {
-      setAviso("falha");
       return;
     }
-    if (resposta.status === 404) return setAviso("nao_encontrado");
-    if (!resposta.ok) return setAviso("falha");
+    if (!resposta.ok) return;
     const achado = (await resposta.json()) as Record<CampoDoCep, string>;
     setV((atual) => {
       const novo = { ...atual };
@@ -110,7 +95,6 @@ export function CamposEndereco({
       }
       return novo;
     });
-    setAviso("encontrado");
     numero.current?.focus();
   }
 
@@ -120,7 +104,6 @@ export function CamposEndereco({
     const digitos = normalizarCep(texto);
     if (digitos.length !== 8) {
       ultimoCep.current = "";
-      setAviso(null);
       return;
     }
     if (digitos === ultimoCep.current) return;
@@ -147,9 +130,6 @@ export function CamposEndereco({
             onBlur={() => setV((atual) => ({ ...atual, cep: formatarCep(atual.cep) }))}
             erros={erros?.cep}
           />
-          <FieldDescription role="status" aria-live="polite" className="empty:hidden">
-            {aviso && AVISOS[aviso]}
-          </FieldDescription>
         </div>
         <CampoTexto
           name="logradouro"

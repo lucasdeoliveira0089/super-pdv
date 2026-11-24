@@ -1,5 +1,22 @@
 # Spec Delta
 
+## MODIFIED Requirements
+
+### Requirement: Preenchimento do endereço pelo CEP
+Nos formulários de empresa do admin, ao informar um CEP válido, o admin SHALL consultar um serviço público de CEP e preencher logradouro, bairro, cidade e UF, que MUST continuar editáveis. O admin MUST NOT exibir mensagens sobre a busca (nem de andamento, nem de sucesso, nem de falha). Uma falha na consulta MUST NOT impedir o cadastro.
+
+#### Scenario: CEP encontrado
+- **WHEN** a equipe digita o CEP `01310-100` no formulário de novo cliente
+- **THEN** logradouro, bairro, cidade e UF são preenchidos com o endereço desse CEP, o foco vai para o número e nenhuma mensagem é exibida abaixo do CEP
+
+#### Scenario: CEP não encontrado
+- **WHEN** a equipe digita um CEP com 8 dígitos que o serviço não conhece
+- **THEN** nenhuma mensagem é exibida e os campos ficam livres para preenchimento manual
+
+#### Scenario: Serviço de CEP indisponível
+- **WHEN** o serviço de CEP não responde
+- **THEN** nenhuma mensagem é exibida, e a equipe preenche e salva o endereço à mão
+
 ## ADDED Requirements
 
 ### Requirement: Máscara do CNPJ nos formulários do admin
