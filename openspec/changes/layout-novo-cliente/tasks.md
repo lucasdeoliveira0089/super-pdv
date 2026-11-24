@@ -17,7 +17,7 @@
 
 ## 4. Verificação final
 
-- [ ] 4.1 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam. Conferir no navegador, na tela "Novo cliente", o tema claro e os cartões.
+- [x] 4.1 Executar `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check`, os E2E do admin e do gestor e `openspec validate layout-novo-cliente --strict`, e verificar que todos passam. Conferir no navegador, na tela "Novo cliente", o tema claro e os cartões.
 
 ## Workflow follow-up
 
